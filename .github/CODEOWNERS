@@ -1,27 +1,20 @@
 # 파일별 리뷰어 자동 지정 (GitHub 사용자명으로 @dev-a / @dev-b 를 바꿔주세요)
 # 아래 소유자는 해당 경로 PR에 자동으로 리뷰어로 지정됩니다.
+# 뒤에 오는 규칙이 우선하므로, 공용/백엔드 규칙을 아래쪽에 둡니다.
 
-# ── Dev A: 탐색 & 생성 ──────────────────────────────
-/app/page.tsx                       @dev-a
-/app/rooms/page.tsx                 @dev-a
-/app/rooms/rooms-client.tsx         @dev-a
-/app/rooms/create/                  @dev-a
-/components/room-card.tsx           @dev-a
-/components/tag-pill.tsx            @dev-a
-/components/track-search.tsx        @dev-a
+# ── 기본: 프론트엔드 전부 → Dev A ──────────────────
+*                                   @dev-a
+/app/                               @dev-a
+/components/                        @dev-a
 
-# ── Dev B: 라이브 룸 & 리캡 ─────────────────────────
-/app/rooms/[id]/                    @dev-b
-/components/now-playing-card.tsx    @dev-b
-/components/queue-list.tsx          @dev-b
-/components/reaction-bar.tsx        @dev-b
-/components/avatar-stack.tsx        @dev-b
+# ── Dev B: 백엔드 · 실시간 ─────────────────────────
+/app/api/                           @dev-b
+/lib/supabase/                      @dev-b
+/lib/realtime.ts                    @dev-b
+/lib/mock-data.ts                   @dev-b
+/supabase/                          @dev-b
 
-# ── 공용: 양쪽 모두 리뷰 ────────────────────────────
+# ── 공용: 양쪽 모두 리뷰 (계약) ─────────────────────
 /lib/types.ts                       @dev-a @dev-b
-/lib/mock-data.ts                   @dev-a @dev-b
 /lib/utils.ts                       @dev-a @dev-b
-/components/app-header.tsx          @dev-a @dev-b
-/components/ui/                      @dev-a @dev-b
-/app/layout.tsx                     @dev-a @dev-b
-/app/globals.css                    @dev-a @dev-b
+/.github/                           @dev-a @dev-b

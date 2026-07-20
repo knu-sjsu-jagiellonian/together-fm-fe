@@ -4,48 +4,64 @@ Together FM을 두 명이 나눠서 개발하기 위한 역할 분담과 Git 워
 
 ## 1. 역할 분담
 
-기능이 라우트/컴포넌트 단위로 잘 나뉘어 있어, **세로 단위(vertical slice)** 로 나눕니다.
-각자 자기 영역의 페이지·컴포넌트를 온전히 담당하므로 파일 충돌이 거의 없습니다.
+**레이어(프론트엔드 / 백엔드·실시간)** 로 나눕니다. 지금 추가할 가장 큰 덩어리가 백엔드+실시간이라 화면별 분리보다 이쪽이 자연스럽습니다.
 
-### 👤 Dev A — 탐색 & 생성 (Discovery / Create)
+핵심은 이미 존재하는 **이음새**입니다: `lib/mock-data.ts`의 네 async 함수. A는 계속 이 함수(목업)를 호출하며 UI를 만들고, B는 **같은 시그니처 뒤의 구현만** Supabase로 교체합니다. 서로 안 막힙니다.
 
-사용자가 방을 **찾고 만드는** 흐름을 담당합니다.
+### 👤 Dev A — 프론트엔드
 
-| 종류 | 파일 |
-| --- | --- |
-| 랜딩 | `app/page.tsx` |
-| 방 목록 · 필터 | `app/rooms/page.tsx`, `app/rooms/rooms-client.tsx` |
-| 방 생성 | `app/rooms/create/page.tsx`, `app/rooms/create/create-room-form.tsx` |
-| 컴포넌트 | `components/room-card.tsx`, `components/tag-pill.tsx`, `components/track-search.tsx` |
-| 데이터 함수 | `getRooms()`, `searchTracks()` (in `lib/mock-data.ts`) |
-
-### 👤 Dev B — 라이브 룸 & 리캡 (Live Room / Recap)
-
-방에 들어가서 **함께 듣고 끝난 뒤 되돌아보는** 흐름을 담당합니다.
+화면과 상호작용 전부. 데이터는 목업 함수(→ 나중에 B의 실제 구현)를 호출만 합니다.
 
 | 종류 | 파일 |
 | --- | --- |
-| 실시간 방 | `app/rooms/[id]/page.tsx`, `app/rooms/[id]/room-client.tsx` |
-| 세션 리캡 | `app/rooms/[id]/summary/page.tsx` |
-| 컴포넌트 | `components/now-playing-card.tsx`, `components/queue-list.tsx`, `components/reaction-bar.tsx`, `components/avatar-stack.tsx` |
-| 데이터 함수 | `getRoomById()`, `getRoomSummary()` (in `lib/mock-data.ts`) |
+| 방 목록 · 필터 | `app/rooms/page.tsx`, `app/rooms/rooms-client.tsx`, `components/room-card.tsx`, `components/tag-pill.tsx` |
+| 방 만들기 | `app/rooms/create/*`, `components/track-search.tsx` |
+| 방 내부 UI | `app/rooms/[id]/page.tsx`, `app/rooms/[id]/room-client.tsx`, `components/now-playing-card.tsx`, `components/queue-list.tsx`, `components/avatar-stack.tsx` |
+| YouTube 재생 UI | **(신규)** `components/youtube-player.tsx` — IFrame Player API 연동 |
+| 이모지 리액션 애니메이션 | `components/reaction-bar.tsx` |
+| 방 종료 요약 | `app/rooms/[id]/summary/page.tsx` |
+| 공용 UI | `components/app-header.tsx`, `components/ui/*`, `app/globals.css`, `app/layout.tsx`, `app/page.tsx` |
 
-### 🤝 공용 파일 (변경 시 먼저 상의)
+### 👤 Dev B — 백엔드 · 실시간
 
-아래는 **계약(contract)** 이라 한쪽이 마음대로 바꾸면 상대가 깨집니다. 변경 전 서로 합의하고, PR에서 반드시 상대 리뷰를 받으세요.
+데이터·상태·동기화 전부. UI는 건드리지 않고 **함수 시그니처 계약**만 지킵니다.
+
+| 종류 | 파일 |
+| --- | --- |
+| Supabase 스키마·마이그레이션 | **(신규)** `supabase/migrations/*` — Room / Track / Participant / Reaction 테이블 |
+| DB 클라이언트·쿼리 | **(신규)** `lib/supabase/*` |
+| 실시간 동기화 | **(신규)** `lib/realtime.ts` — Supabase Realtime(권장) 또는 Socket.io |
+| 재생 위치 서버 상태 | **(신규)** `app/api/rooms/[id]/playback/route.ts` 등 |
+| API 라우트 | **(신규)** `app/api/**` — 방 생성/입장/종료, 곡 추가, 참여자 관리 |
+| 데이터 계층 구현 | `lib/mock-data.ts` → 실제 구현으로 교체 (시그니처 유지) |
+
+### 🤝 공용 파일 (변경 시 먼저 상의 · 양쪽 리뷰 필수)
+
+아래는 **계약(contract)** 이라 한쪽이 마음대로 바꾸면 상대가 깨집니다.
 
 | 파일 | 성격 |
 | --- | --- |
-| `lib/types.ts` | 모든 타입·태그의 단일 소스. 인터페이스 변경은 양쪽에 영향 |
-| `lib/mock-data.ts` | 데이터 계층. **함수 시그니처는 계약** — 각자 자기 함수만 수정 |
-| `components/app-header.tsx`, `components/ui/button.tsx` | 공용 UI |
-| `app/layout.tsx`, `app/globals.css`, `lib/utils.ts` | 전역 레이아웃·스타일·유틸 |
+| `lib/types.ts` | 모든 타입·태그의 단일 소스. **여기에 실시간 이벤트 페이로드 타입도 정의** |
+| `lib/mock-data.ts`의 함수 시그니처 | 데이터 접근 계약. A가 호출 / B가 구현 |
+| `lib/utils.ts` | 공용 유틸 |
 
-> 파일 소유권은 `.github/CODEOWNERS`에도 정리되어 있습니다. (사용자명만 채우면 GitHub이 리뷰어를 자동 지정)
+### 두 개의 계약을 먼저 못 박기
 
-### 데이터 계층이 곧 인터페이스
+프론트/백 분리에서 유일하게 서로 막히는 지점은 인터페이스입니다. **작업 시작 전 둘이 같이** 아래를 `lib/types.ts`에 정의하세요.
 
-`lib/mock-data.ts`의 네 함수는 이미 `async`로 격리돼 있습니다. 각 함수의 **시그니처와 반환 타입을 고정**해두면, 나중에 한 명이 이 함수들을 Supabase 같은 실제 백엔드로 하나씩 교체해도 UI 코드는 그대로 동작합니다. 백엔드 작업을 별도로 나누고 싶어지면 이 경계가 그대로 분업선이 됩니다.
+1. **데이터 접근 함수 시그니처** — `getRooms()`, `getRoomById()`, `getRoomSummary()`, `searchTracks()` + 앞으로 필요한 변이(mutation): 방 생성/입장/종료, 곡 추가/삭제 등. A는 이 시그니처만 보고 UI를 짜고, B는 이 시그니처를 구현.
+2. **실시간 이벤트 페이로드** — 리액션 broadcast, 재생 위치 sync, 큐 변경 이벤트의 모양. 리액션 애니메이션(A)과 broadcast(B)가 여기서 만납니다. 예:
+   ```ts
+   // lib/types.ts (예시 — 둘이 합의해서 확정)
+   export interface PlaybackState { track_id: string; position_sec: number; is_playing: boolean; updated_at: string }
+   export interface ReactionEvent { participant_id: string; emoji: string; at: string }
+   export type RealtimeEvent =
+     | { type: 'playback'; payload: PlaybackState }
+     | { type: 'reaction'; payload: ReactionEvent }
+     | { type: 'queue'; payload: Track[] }
+   ```
+
+> B가 API/스키마를 완성하기 전이라도 A는 목업으로 UI를 끝까지 만들 수 있습니다. 계약만 고정돼 있으면 나중에 배선(wiring)만 바꾸면 됩니다.
 
 ---
 
@@ -63,7 +79,8 @@ feat/<영역>-<간단설명>     예) feat/rooms-filter, feat/live-reactions
 fix/<영역>-<간단설명>      예) fix/queue-duplicate
 ```
 
-영역 접두사로 누구 작업인지 구분: `rooms-`, `create-`, `search-` → Dev A / `live-`, `recap-`, `queue-` → Dev B
+영역 접두사로 누구 작업인지 구분: `fe-` (프론트, Dev A) / `be-` (백엔드·실시간, Dev B)
+예) `feat/fe-youtube-player`, `feat/be-supabase-schema`, `feat/be-realtime-reactions`
 
 ### 하루 흐름
 

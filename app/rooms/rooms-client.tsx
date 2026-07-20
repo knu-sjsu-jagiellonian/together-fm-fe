@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Lock } from 'lucide-react'
 import type { FilterTag, RoomWithDetails } from '@/lib/types'
 import { TagPill } from '@/components/tag-pill'
 import { RoomCard } from '@/components/room-card'
@@ -11,7 +13,13 @@ interface RoomsClientProps {
 }
 
 export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
+  const router = useRouter()
   const [activeFilter, setActiveFilter] = useState<FilterTag>('전체')
+
+  // Password gate for private rooms.
+  const [locked, setLocked] = useState<RoomWithDetails | null>(null)
+  const [pw, setPw] = useState('')
+  const [pwError, setPwError] = useState(false)
 
   const filtered = activeFilter === '전체'
     ? rooms
@@ -21,6 +29,23 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
           r.mood_tag === activeFilter ||
           r.situation_tag === activeFilter,
       )
+
+  const openGate = (room: RoomWithDetails) => {
+    setLocked(room)
+    setPw('')
+    setPwError(false)
+  }
+
+  const submitGate = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!locked) return
+    // Mock check — the real password lives on the backend.
+    if (pw === (locked.password ?? '')) {
+      router.push(`/rooms/${locked.id}`)
+    } else {
+      setPwError(true)
+    }
+  }
 
   return (
     <section className="pb-8">
@@ -49,7 +74,7 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
         <ul className="flex flex-col gap-3" role="list">
           {filtered.map((room) => (
             <li key={room.id}>
-              <RoomCard room={room} />
+              <RoomCard room={room} onLockedClick={openGate} />
             </li>
           ))}
         </ul>
@@ -63,6 +88,71 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
           </p>
         </div>
       )}
+
+      {/* Private-room password modal */}
+      {locked && (
+        <div
+          className="fixed inset-0 z-50 mx-auto flex max-w-[440px] items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="비공개 방 입장"
+          onClick={() => setLocked(null)}
+        >
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={submitGate}
+            className="w-full rounded-[20px] border-2 border-border bg-white p-6"
+          >
+            <div className="mb-3 flex items-center gap-2">
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-secondary">
+                <Lock className="h-4 w-4 text-primary" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-[14px] font-extrabold text-foreground">{locked.title}</p>
+                <p className="text-[11px] font-medium text-muted-foreground">비공개 방 · 비밀번호를 입력하세요</p>
+              </div>
+            </div>
+            <input
+              autoFocus
+              type="text"
+              inputMode="numeric"
+              value={pw}
+              onChange={(e) => {
+                setPw(e.target.value.slice(0, 8))
+                setPwError(false)
+              }}
+              placeholder="비밀번호 (최대 8자)"
+              maxLength={8}
+              className={cnInput(pwError)}
+              aria-label="입장 비밀번호"
+            />
+            {pwError && <p className="mt-1.5 text-[12px] font-semibold text-destructive">비밀번호가 올바르지 않아요</p>}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setLocked(null)}
+                className="flex-1 rounded-full border-2 border-border py-2.5 text-[13px] font-bold text-muted-foreground hover:text-foreground"
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                disabled={pw.length === 0}
+                className="flex-1 rounded-full bg-holo py-2.5 text-[13px] font-extrabold text-[#2c2a35] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                입장하기
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </section>
   )
+}
+
+function cnInput(error: boolean) {
+  return [
+    'w-full rounded-[14px] border-2 bg-white px-4 py-3 text-[15px] tracking-widest text-foreground outline-none transition-colors placeholder:tracking-normal placeholder:text-muted-foreground/60',
+    error ? 'border-destructive' : 'border-border focus:border-primary',
+  ].join(' ')
 }

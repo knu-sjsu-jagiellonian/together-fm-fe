@@ -7,6 +7,8 @@ import { Vinyl } from './vinyl'
 
 interface RoomCardProps {
   room: RoomWithDetails
+  /** Called instead of navigating when a private room is clicked (password gate). */
+  onLockedClick?: (room: RoomWithDetails) => void
   className?: string
 }
 
@@ -19,27 +21,23 @@ function accentFor(id: string) {
   return ACCENTS[sum % ACCENTS.length]
 }
 
-export function RoomCard({ room, className }: RoomCardProps) {
+export function RoomCard({ room, onLockedClick, className }: RoomCardProps) {
   const memberCount = room.participants.length
   const isFull = memberCount >= room.max_members
   const accent = accentFor(room.id)
+  const locked = !room.is_public
 
-  return (
-    <Link
-      href={`/rooms/${room.id}`}
-      className={cn(
-        'group relative flex gap-4 overflow-hidden rounded-[18px] border-2 border-border bg-white p-4 pl-5 transition-all duration-300',
-        'hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(120,100,160,0.14)]',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
-        className,
-      )}
-    >
+  const cardClass = cn(
+    'group relative flex w-full gap-4 overflow-hidden rounded-[18px] border-2 border-border bg-white p-4 pl-5 text-left transition-all duration-300',
+    'hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(120,100,160,0.14)]',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
+    className,
+  )
+
+  const inner = (
+    <>
       {/* left accent bar */}
-      <span
-        className="absolute left-0 top-0 h-full w-1 rounded-full"
-        style={{ background: accent }}
-        aria-hidden="true"
-      />
+      <span className="absolute left-0 top-0 h-full w-1 rounded-full" style={{ background: accent }} aria-hidden="true" />
 
       {/* vinyl profile */}
       <Vinyl size={86} hub={accent} className="flex-shrink-0 self-center" />
@@ -47,17 +45,15 @@ export function RoomCard({ room, className }: RoomCardProps) {
       {/* body */}
       <div className="min-w-0 flex-1">
         <div className="mb-1.5 flex items-center gap-1.5">
-          <span className="rounded-lg bg-primary px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-white">
-            LIVE
-          </span>
-          {!room.is_public && (
-            <Lock className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+          <span className="rounded-lg bg-primary px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-white">LIVE</span>
+          {locked && (
+            <span className="inline-flex items-center gap-0.5 rounded-lg bg-secondary px-1.5 py-0.5 text-[8.5px] font-bold text-muted-foreground">
+              <Lock className="h-2.5 w-2.5" /> 비공개
+            </span>
           )}
         </div>
 
-        <h3 className="truncate text-[15px] font-bold leading-snug text-foreground">
-          {room.title}
-        </h3>
+        <h3 className="truncate text-[15px] font-bold leading-snug text-foreground">{room.title}</h3>
 
         <div className="mt-1.5 flex flex-wrap gap-1">
           <TagPill label={room.situation_tag} />
@@ -85,18 +81,28 @@ export function RoomCard({ room, className }: RoomCardProps) {
                 <span
                   key={i}
                   className="w-[3px] rounded-full motion-safe:animate-bounce"
-                  style={{
-                    height: h,
-                    background: accent,
-                    animationDelay: `${i * 0.1}s`,
-                    animationDuration: '0.9s',
-                  }}
+                  style={{ height: h, background: accent, animationDelay: `${i * 0.1}s`, animationDuration: '0.9s' }}
                 />
               ))}
             </span>
           )}
         </div>
       </div>
+    </>
+  )
+
+  // Private rooms open a password gate instead of navigating directly.
+  if (locked && onLockedClick) {
+    return (
+      <button type="button" onClick={() => onLockedClick(room)} className={cardClass}>
+        {inner}
+      </button>
+    )
+  }
+
+  return (
+    <Link href={`/rooms/${room.id}`} className={cardClass}>
+      {inner}
     </Link>
   )
 }

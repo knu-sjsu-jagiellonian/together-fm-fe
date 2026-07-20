@@ -10,7 +10,7 @@ import { TrackSearch } from '@/components/track-search'
 import { api, getToken, ApiError } from '@/lib/api'
 import type { SearchResult } from '@/lib/api-types'
 
-/** Holographic single-select chip. */
+/** Holographic multi-select chip. */
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
@@ -38,25 +38,33 @@ function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: Reac
   )
 }
 
+/** Toggle a value in an array (multi-select). */
+function toggle<T>(arr: T[], value: T): T[] {
+  return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]
+}
+
 export function CreateRoomForm() {
   const router = useRouter()
 
   const [title, setTitle] = useState('')
-  const [genreTag, setGenreTag] = useState<GenreTag | null>(null)
-  const [moodTag, setMoodTag] = useState<MoodTag | null>(null)
-  const [situationTag, setSituationTag] = useState<SituationTag | null>(null)
-  const [maxMembers, setMaxMembers] = useState(8)
+  const [genres, setGenres] = useState<GenreTag[]>([])
+  const [moods, setMoods] = useState<MoodTag[]>([])
+  const [situations, setSituations] = useState<SituationTag[]>([])
+  const [maxMembers, setMaxMembers] = useState(10)
   const [isPublic, setIsPublic] = useState(true)
+  const [password, setPassword] = useState('')
   const [track, setTrack] = useState<SearchResult | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const passwordOk = isPublic || (password.length >= 1 && password.length <= 8)
   const isValid =
     title.trim().length > 0 &&
-    genreTag !== null &&
-    moodTag !== null &&
-    situationTag !== null &&
-    track !== null
+    genres.length > 0 &&
+    moods.length > 0 &&
+    situations.length > 0 &&
+    track !== null &&
+    passwordOk
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,21 +72,20 @@ export function CreateRoomForm() {
     setIsSubmitting(true)
     setError(null)
 
-    const tags = [genreTag, moodTag, situationTag].filter(Boolean) as string[]
+    const tags = [...genres, ...moods, ...situations] as string[]
 
     try {
       if (getToken()) {
-        // Live: create on the backend and jump to the real room.
         const { id } = await api.createRoom({
           title: title.trim(),
           tags,
           maxMembers,
           isPublic,
+          ...(isPublic ? {} : { password }),
           firstTrack: { videoId: track.videoId },
         })
         router.push(`/rooms/${id}`)
       } else {
-        // Login not wired yet → demo navigation.
         await new Promise((res) => setTimeout(res, 500))
         router.push('/rooms/room-1')
       }
@@ -104,36 +111,36 @@ export function CreateRoomForm() {
         />
       </div>
 
-      {/* genre */}
+      {/* genre (multi) */}
       <div>
-        <FieldLabel hint={genreTag ? '선택됨' : undefined}>장르</FieldLabel>
+        <FieldLabel hint={genres.length ? `${genres.length}개 선택됨` : undefined}>장르 (중복 선택)</FieldLabel>
         <div className="flex flex-wrap gap-2" role="group" aria-label="장르 선택">
           {GENRE_TAGS.map((tag) => (
-            <Chip key={tag} label={tag} active={genreTag === tag} onClick={() => setGenreTag(genreTag === tag ? null : tag)} />
+            <Chip key={tag} label={tag} active={genres.includes(tag)} onClick={() => setGenres((g) => toggle(g, tag))} />
           ))}
         </div>
       </div>
 
-      {/* mood */}
+      {/* mood (multi) */}
       <div>
-        <FieldLabel hint={moodTag ? '선택됨' : undefined}>분위기</FieldLabel>
+        <FieldLabel hint={moods.length ? `${moods.length}개 선택됨` : undefined}>분위기 (중복 선택)</FieldLabel>
         <div className="flex flex-wrap gap-2" role="group" aria-label="분위기 선택">
           {MOOD_TAGS.map((tag) => (
-            <Chip key={tag} label={tag} active={moodTag === tag} onClick={() => setMoodTag(moodTag === tag ? null : tag)} />
+            <Chip key={tag} label={tag} active={moods.includes(tag)} onClick={() => setMoods((m) => toggle(m, tag))} />
           ))}
         </div>
       </div>
 
-      {/* situation */}
+      {/* situation (multi) */}
       <div>
-        <FieldLabel hint={situationTag ? '선택됨' : undefined}>상황</FieldLabel>
+        <FieldLabel hint={situations.length ? `${situations.length}개 선택됨` : undefined}>상황 (중복 선택)</FieldLabel>
         <div className="flex flex-wrap gap-2" role="group" aria-label="상황 선택">
           {SITUATION_TAGS.map((tag) => (
-            <Chip key={tag} label={tag} active={situationTag === tag} onClick={() => setSituationTag(situationTag === tag ? null : tag)} />
+            <Chip key={tag} label={tag} active={situations.includes(tag)} onClick={() => setSituations((s) => toggle(s, tag))} />
           ))}
         </div>
         <p className="mt-2.5 text-[10.5px] font-medium text-muted-foreground/80">
-          태그를 선택하면 더 잘 맞는 사람들과 만날 수 있어요
+          태그를 여러 개 선택하면 더 잘 맞는 사람들과 만날 수 있어요
         </p>
       </div>
 
@@ -143,15 +150,19 @@ export function CreateRoomForm() {
         <input
           type="range"
           min={2}
-          max={8}
+          max={30}
           value={maxMembers}
           onChange={(e) => setMaxMembers(Number(e.target.value))}
           className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
           aria-label="최대 인원"
         />
+        <div className="mt-1 flex justify-between text-[10px] font-medium text-muted-foreground/70">
+          <span>2명</span>
+          <span>30명</span>
+        </div>
       </div>
 
-      {/* visibility */}
+      {/* visibility + password */}
       <div>
         <FieldLabel>방 공개 여부</FieldLabel>
         <div className="inline-flex rounded-full border-2 border-border bg-white p-1">
@@ -164,6 +175,24 @@ export function CreateRoomForm() {
             비공개
           </button>
         </div>
+
+        {!isPublic && (
+          <div className="mt-3">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={password}
+              onChange={(e) => setPassword(e.target.value.slice(0, 8))}
+              placeholder="입장 비밀번호 (최대 8자)"
+              maxLength={8}
+              className="w-full rounded-[14px] border-2 border-border bg-white px-4 py-3 text-[14px] tracking-widest text-foreground outline-none transition-colors placeholder:tracking-normal placeholder:text-muted-foreground/60 focus:border-primary"
+              aria-label="입장 비밀번호"
+            />
+            <p className="mt-1.5 text-[10.5px] font-medium text-muted-foreground/80">
+              비공개 방은 입장 시 이 비밀번호가 필요해요
+            </p>
+          </div>
+        )}
       </div>
 
       {/* first track — real search */}

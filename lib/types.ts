@@ -22,6 +22,7 @@ export interface Room {
   situation_tag: SituationTag
   max_members: number
   is_public: boolean
+  password?: string   // set for private rooms (mock; max 8 chars)
   created_at: string
   ended_at: string | null
 }
@@ -44,6 +45,7 @@ export interface Track {
   played_at: string | null
   album_art?: string
   duration_sec?: number
+  video_id?: string   // YouTube video id (for album art + playlist export)
 }
 
 export interface Reaction {

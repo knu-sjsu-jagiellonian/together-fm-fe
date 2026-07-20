@@ -42,11 +42,13 @@ interface MinimiProps {
   size?: number
   /** Highlight as "me" with a thick purple border. */
   isMe?: boolean
+  /** Nickname — shown as a tooltip on hover. */
+  name?: string
   className?: string
 }
 
 /** Pixel-art minimi avatar in a white rounded card (mock design). */
-export function Minimi({ seed = 'x', clothes, size = 38, isMe = false, className }: MinimiProps) {
+export function Minimi({ seed = 'x', clothes, size = 38, isMe = false, name, className }: MinimiProps) {
   const hair = pick(HAIR, seed, 1)
   const cloth = clothes ?? pick(CLOTHES, seed, 7)
   const colorFor: Record<string, string> = {
@@ -54,31 +56,34 @@ export function Minimi({ seed = 'x', clothes, size = 38, isMe = false, className
   }
 
   return (
-    <span
-      className={cn(
-        'inline-grid place-items-center rounded-[10px] border-2 bg-white',
-        isMe ? 'border-primary' : 'border-border',
-        className,
-      )}
-      style={{ width: size, height: size * 1.6, borderWidth: isMe ? 3 : 2 }}
-      aria-hidden="true"
-    >
-      <svg viewBox="0 0 36 72" width={size * 0.82} height={size * 1.32}>
-        {GRID.flatMap((row, r) =>
-          row.split('').map((ch, c) =>
-            ch === '.' ? null : (
-              <rect
-                key={`${r}-${c}`}
-                x={c * 6}
-                y={r * 6}
-                width={6}
-                height={6}
-                fill={colorFor[ch]}
-              />
-            ),
-          ),
+    <span className={cn('group relative inline-block', className)}>
+      <span
+        className={cn(
+          'inline-grid place-items-center rounded-[10px] border-2 bg-white',
+          isMe ? 'border-primary' : 'border-border',
         )}
-      </svg>
+        style={{ width: size, height: size * 1.6, borderWidth: isMe ? 3 : 2 }}
+        title={name}
+        aria-label={name}
+        role={name ? 'img' : undefined}
+      >
+        <svg viewBox="0 0 36 72" width={size * 0.82} height={size * 1.32}>
+          {GRID.flatMap((row, r) =>
+            row.split('').map((ch, c) =>
+              ch === '.' ? null : (
+                <rect key={`${r}-${c}`} x={c * 6} y={r * 6} width={6} height={6} fill={colorFor[ch]} />
+              ),
+            ),
+          )}
+        </svg>
+      </span>
+
+      {/* hover nickname tooltip */}
+      {name && (
+        <span className="pointer-events-none absolute -top-7 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground px-2 py-1 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">
+          {name}
+        </span>
+      )}
     </span>
   )
 }

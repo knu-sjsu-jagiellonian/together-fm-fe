@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { getRoomSummary } from '@/lib/mock-data'
 import { TagPill } from '@/components/tag-pill'
 import { Vinyl } from '@/components/vinyl'
 import { Minimi } from '@/components/minimi'
+import { SummaryActions } from '@/components/summary-actions'
 
 interface SummaryPageProps {
   params: Promise<{ id: string }>
@@ -76,7 +76,7 @@ export default async function SummaryPage({ params }: SummaryPageProps) {
         <ul className="flex flex-wrap gap-2" role="list">
           {visibleParticipants.map((p) => (
             <li key={p.id}>
-              <Minimi seed={p.id} clothes={p.avatar_color} isMe={p.id === meId} size={38} />
+              <Minimi seed={p.id} clothes={p.avatar_color} isMe={p.id === meId} size={38} name={p.name} />
             </li>
           ))}
         </ul>
@@ -86,20 +86,7 @@ export default async function SummaryPage({ params }: SummaryPageProps) {
       </div>
 
       {/* actions */}
-      <div className="mt-auto flex flex-col gap-3 pt-8">
-        <button
-          type="button"
-          className="w-full rounded-full bg-holo py-4 text-[16px] font-extrabold text-[#2c2a35] transition-transform hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-        >
-          플레이리스트 다시 듣기
-        </button>
-        <Link
-          href="/rooms"
-          className="w-full rounded-full border-2 border-border py-3.5 text-center text-[14px] font-bold text-foreground transition-colors hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-        >
-          친구에게 공유하기
-        </Link>
-      </div>
+      <SummaryActions videoIds={tracks.map((t) => t.video_id).filter((v): v is string => Boolean(v))} />
     </main>
   )
 }

@@ -28,20 +28,22 @@ export const MOCK_PARTICIPANTS: Record<string, Participant[]> = {
 // ─── Tracks ───────────────────────────────────────────────────────────────────
 
 export const MOCK_TRACKS: Record<string, Track[]> = {
+  // Real, well-known YouTube ids so album covers render and the "save playlist"
+  // export actually opens a working YouTube playlist.
   'room-1': [
-    { id: 't1', room_id: 'room-1', title: 'Motion Sickness', artist: 'Phoebe Bridgers', added_by: 'Mia', position: 0, played_at: '2024-01-15T14:10:00Z', duration_sec: 240 },
-    { id: 't2', room_id: 'room-1', title: 'About You', artist: 'The 1975', added_by: 'Noah', position: 1, played_at: null, duration_sec: 331 },
-    { id: 't3', room_id: 'room-1', title: 'Bags', artist: 'Clairo', added_by: 'Sofia', position: 2, played_at: null, duration_sec: 260 },
-    { id: 't4', room_id: 'room-1', title: 'Glue Song', artist: 'beabadoobee', added_by: 'Mia', position: 3, played_at: null, duration_sec: 140 },
+    { id: 't1', room_id: 'room-1', title: 'Take On Me', artist: 'a-ha', added_by: 'Mia', position: 0, played_at: '2024-01-15T14:10:00Z', duration_sec: 225, video_id: 'djV11Xbc914' },
+    { id: 't2', room_id: 'room-1', title: 'As It Was', artist: 'Harry Styles', added_by: 'Noah', position: 1, played_at: null, duration_sec: 167, video_id: 'H5v3kku4y6Q' },
+    { id: 't3', room_id: 'room-1', title: 'Hello', artist: 'Adele', added_by: 'Sofia', position: 2, played_at: null, duration_sec: 295, video_id: 'YQHsXMglC9A' },
+    { id: 't4', room_id: 'room-1', title: 'Roar', artist: 'Katy Perry', added_by: 'Mia', position: 3, played_at: null, duration_sec: 224, video_id: 'CevxZvSJLk8' },
   ],
   'room-2': [
-    { id: 't5', room_id: 'room-2', title: 'Aruarian Dance', artist: 'Nujabes', added_by: 'Liam', position: 0, played_at: '2024-01-15T13:05:00Z', duration_sec: 244 },
-    { id: 't6', room_id: 'room-2', title: 'Harbor', artist: 'Tomppabeats', added_by: 'Emma', position: 1, played_at: null, duration_sec: 132 },
+    { id: 't5', room_id: 'room-2', title: 'Uptown Funk', artist: 'Mark Ronson ft. Bruno Mars', added_by: 'Liam', position: 0, played_at: '2024-01-15T13:05:00Z', duration_sec: 270, video_id: 'OPf0YbXqDm0' },
+    { id: 't6', room_id: 'room-2', title: 'Shape of You', artist: 'Ed Sheeran', added_by: 'Emma', position: 1, played_at: null, duration_sec: 234, video_id: 'JGwWNGJdvx8' },
   ],
   'room-3': [
-    { id: 't7', room_id: 'room-3', title: 'HUMBLE.', artist: 'Kendrick Lamar', added_by: 'Aria', position: 0, played_at: '2024-01-15T12:20:00Z', duration_sec: 177 },
-    { id: 't8', room_id: 'room-3', title: 'SICKO MODE', artist: 'Travis Scott', added_by: 'Kai', position: 1, played_at: null, duration_sec: 312 },
-    { id: 't9', room_id: 'room-3', title: 'Paint The Town Red', artist: 'Doja Cat', added_by: 'Luca', position: 2, played_at: null, duration_sec: 231 },
+    { id: 't7', room_id: 'room-3', title: 'See You Again', artist: 'Wiz Khalifa ft. Charlie Puth', added_by: 'Aria', position: 0, played_at: '2024-01-15T12:20:00Z', duration_sec: 230, video_id: 'RgKAFK5djSk' },
+    { id: 't8', room_id: 'room-3', title: 'Despacito', artist: 'Luis Fonsi ft. Daddy Yankee', added_by: 'Kai', position: 1, played_at: null, duration_sec: 281, video_id: 'kJQP7kiw5Fk' },
+    { id: 't9', room_id: 'room-3', title: 'Bohemian Rhapsody', artist: 'Queen', added_by: 'Luca', position: 2, played_at: null, duration_sec: 355, video_id: 'fJ9rUzIMcZQ' },
   ],
 }
 
@@ -87,8 +89,9 @@ export const MOCK_ROOMS: Room[] = [
     genre_tag: '팝',
     mood_tag: '파티',
     situation_tag: '일상',
-    max_members: 6,
+    max_members: 30,
     is_public: false,
+    password: '1234',
     created_at: '2024-01-15T20:00:00Z',
     ended_at: null,
   },

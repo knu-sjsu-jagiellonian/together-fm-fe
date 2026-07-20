@@ -59,6 +59,7 @@ export interface CreateRoomBody {
   tags: string[]
   maxMembers: number
   isPublic: boolean
+  password?: string // required when isPublic is false (max 8 chars)
   firstTrack: TrackInput
 }
 

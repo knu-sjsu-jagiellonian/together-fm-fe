@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${spaceGrotesk.variable} bg-background`}>
       <body className="font-sans antialiased min-h-screen">
-        {children}
+        <div className="phone-shell flex flex-col">{children}</div>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

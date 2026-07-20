@@ -54,53 +54,65 @@
 
 :root {
   color-scheme: light;
-  /* Bright Y2K bubblegum base */
-  --background: oklch(0.96 0.03 330);
-  --foreground: oklch(0.28 0.09 310);
+  /* Soft pastel holographic base (mock: #fdf9ff → #f5f2fb) */
+  --background: #faf7ff;
+  --foreground: #2c2a35;
 
-  /* Frosted-white glass cards */
-  --card: oklch(1 0 0 / 60%);
-  --card-foreground: oklch(0.28 0.09 310);
-  --popover: oklch(0.99 0.01 330 / 92%);
-  --popover-foreground: oklch(0.28 0.09 310);
+  /* Solid white cards with a lilac hairline border */
+  --card: #ffffff;
+  --card-foreground: #2c2a35;
+  --popover: #ffffff;
+  --popover-foreground: #2c2a35;
 
-  /* Neon hot-pink primary */
-  --primary: oklch(0.66 0.27 350);
-  --primary-foreground: oklch(0.99 0.02 350);
+  /* Lavender-purple primary (mock: #a074d6) */
+  --primary: #a074d6;
+  --primary-foreground: #ffffff;
 
-  /* Bubblegum secondary */
-  --secondary: oklch(0.92 0.06 320);
-  --secondary-foreground: oklch(0.3 0.1 320);
+  /* Tinted lilac secondary */
+  --secondary: #f1ecfa;
+  --secondary-foreground: #6b4fa0;
 
-  --muted: oklch(0.94 0.03 320);
-  --muted-foreground: oklch(0.5 0.09 315);
+  --muted: #f4f1fa;
+  --muted-foreground: #8a8598;
 
-  /* Electric-blue accent */
-  --accent: oklch(0.62 0.22 255);
-  --accent-foreground: oklch(0.99 0.02 255);
+  /* Purple accent (used for links / "enter" affordance) */
+  --accent: #8a5fc7;
+  --accent-foreground: #ffffff;
 
-  --destructive: oklch(0.6 0.24 20);
-  --border: oklch(0.5 0.15 320 / 18%);
-  --input: oklch(0.5 0.15 320 / 14%);
-  --ring: oklch(0.66 0.27 350 / 55%);
+  --destructive: #e5647a;
+  --border: #e8e2f2;
+  --input: #e8e2f2;
+  --ring: #a074d6;
 
-  /* Custom neon tokens */
-  --neon-pink: oklch(0.66 0.27 350);
-  --neon-blue: oklch(0.6 0.24 255);
-  --neon-cyan: oklch(0.78 0.16 205);
-  --glass: oklch(1 0 0 / 55%);
-  --glass-border: oklch(1 0 0 / 75%);
+  /* Holographic palette tokens (mock gradient stops) */
+  --holo-1: #ffc2de;
+  --holo-2: #c2d4ff;
+  --holo-3: #c2f5e0;
+  --holo-4: #fff2b8;
+  --holo-5: #e0c2ff;
+  --holo: linear-gradient(135deg, var(--holo-1) 0%, var(--holo-2) 25%, var(--holo-3) 50%, var(--holo-4) 75%, var(--holo-5) 100%);
+
+  /* Vinyl record motif */
+  --vinyl: #2c2a35;
+  --vinyl-groove: #4a4756;
+
+  /* Legacy aliases kept so not-yet-restyled screens still compile */
+  --neon-pink: #e8a8c0;
+  --neon-blue: #a0c8e8;
+  --neon-cyan: #c2f5e0;
+  --glass: #ffffff;
+  --glass-border: #e8e2f2;
 
   --radius: 1rem;
 
-  --sidebar: oklch(0.97 0.03 330);
-  --sidebar-foreground: oklch(0.28 0.09 310);
-  --sidebar-primary: oklch(0.66 0.27 350);
-  --sidebar-primary-foreground: oklch(0.99 0.02 350);
-  --sidebar-accent: oklch(0.92 0.06 320);
-  --sidebar-accent-foreground: oklch(0.3 0.1 320);
-  --sidebar-border: oklch(0.5 0.15 320 / 18%);
-  --sidebar-ring: oklch(0.66 0.27 350 / 55%);
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2c2a35;
+  --sidebar-primary: #a074d6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1ecfa;
+  --sidebar-accent-foreground: #6b4fa0;
+  --sidebar-border: #e8e2f2;
+  --sidebar-ring: #a074d6;
 }
 
 @layer base {
@@ -108,26 +120,63 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    /* Muted holographic haze behind the centered phone shell */
+    background-color: #efe9f6;
     background-image:
-      radial-gradient(ellipse 90% 70% at 12% 0%, oklch(0.78 0.22 350 / 65%) 0%, transparent 58%),
-      radial-gradient(ellipse 80% 70% at 92% 8%, oklch(0.8 0.16 205 / 60%) 0%, transparent 55%),
-      radial-gradient(ellipse 85% 75% at 85% 95%, oklch(0.72 0.2 255 / 60%) 0%, transparent 58%),
-      radial-gradient(ellipse 70% 60% at 25% 100%, oklch(0.82 0.16 320 / 55%) 0%, transparent 55%),
-      radial-gradient(ellipse 60% 50% at 55% 45%, oklch(0.9 0.1 300 / 45%) 0%, transparent 60%);
+      radial-gradient(ellipse 60% 45% at 15% 5%, rgba(255, 194, 222, 0.5) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 45% at 90% 10%, rgba(194, 212, 255, 0.5) 0%, transparent 58%),
+      radial-gradient(ellipse 60% 50% at 85% 95%, rgba(224, 194, 255, 0.45) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 45% at 10% 95%, rgba(194, 245, 224, 0.4) 0%, transparent 58%);
     background-attachment: fixed;
   }
 }
 
-/* Glassmorphism card utility — frosted white with a chrome-ish edge */
-.glass-card {
-  background: oklch(1 0 0 / 55%);
-  backdrop-filter: blur(18px) saturate(1.6);
-  -webkit-backdrop-filter: blur(18px) saturate(1.6);
-  border: 1px solid oklch(1 0 0 / 75%);
-  box-shadow:
-    0 4px 24px oklch(0.55 0.22 330 / 12%),
-    inset 0 1px 0 oklch(1 0 0 / 90%);
+/* ── Phone shell: center the mobile-first app like a device on desktop ── */
+.phone-shell {
+  width: 100%;
+  max-width: 440px;
+  margin-inline: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  background: linear-gradient(160deg, #fdf9ff 0%, #f5f2fb 100%);
+  box-shadow: 0 24px 70px rgba(80, 60, 120, 0.18);
+}
+@media (min-width: 480px) {
+  .phone-shell {
+    min-height: auto;
+    margin-block: 24px;
+    border-radius: 40px;
+    border: 1px solid var(--border);
+    /* no overflow clipping here — it would break sticky headers/nav */
+  }
+}
+
+/* ── Holographic surfaces ── */
+.bg-holo {
+  background-image: var(--holo);
+}
+.text-holo {
+  background-image: var(--holo);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* White fill with a holographic gradient border */
+.holo-ring {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    var(--holo) border-box;
+}
+
+/* ── Card utility — solid white with a lilac hairline (replaces glass) ── */
+.glass-card,
+.soft-card {
+  background: #ffffff;
+  border: 2px solid var(--border);
+  box-shadow: 0 6px 20px rgba(120, 100, 160, 0.06);
 }
 
 /* Chrome / holographic frame accent */
@@ -166,15 +215,15 @@
   letter-spacing: -0.01em;
 }
 
-/* Neon glow utilities */
+/* Soft glow utilities (toned down from neon to pastel) */
 .glow-pink {
-  box-shadow: 0 0 20px oklch(0.68 0.28 340 / 35%), 0 0 40px oklch(0.68 0.28 340 / 15%);
+  box-shadow: 0 4px 16px rgba(160, 116, 214, 0.28);
 }
 .glow-blue {
-  box-shadow: 0 0 20px oklch(0.58 0.22 260 / 35%), 0 0 40px oklch(0.58 0.22 260 / 15%);
+  box-shadow: 0 4px 16px rgba(160, 200, 232, 0.3);
 }
 .glow-cyan {
-  box-shadow: 0 0 20px oklch(0.75 0.2 195 / 35%), 0 0 40px oklch(0.75 0.2 195 / 15%);
+  box-shadow: 0 4px 16px rgba(194, 245, 224, 0.35);
 }
 
 /* Sparkle dots background */

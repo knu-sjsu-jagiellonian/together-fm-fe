@@ -1,58 +1,42 @@
-import Link from 'next/link'
-import { Plus, Radio } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { getRooms } from '@/lib/mock-data'
 import { FILTER_TAGS } from '@/lib/types'
 import { RoomsClient } from './rooms-client'
+import { BottomNav } from '@/components/bottom-nav'
 
 export default async function RoomsPage() {
   const rooms = await getRooms()
 
+  // Rough "listening now" tally for the presence pill.
+  const listeners = rooms.reduce((sum, r) => sum + r.participants.length, 0)
+
   return (
-    <main className="min-h-screen sparkle-bg">
-      {/* Hero header */}
-      <header className="relative overflow-hidden">
-        <div className="relative z-10 max-w-2xl mx-auto px-4 pt-10 pb-6">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5 mb-6">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center glow-pink">
-              <Radio className="w-4.5 h-4.5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="font-bold text-lg leading-none tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Together FM
-              </h1>
-              <p className="text-xs text-muted-foreground leading-none mt-0.5">
-                함께 만드는 라디오
-              </p>
-            </div>
-          </div>
-
-          {/* Headline */}
-          <div className="mb-5">
-            <p className="text-3xl font-extrabold leading-tight text-balance text-foreground bubble-text">
-              지금 열려있는{' '}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                라디오 방
-              </span>
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              마음에 드는 방에 입장하거나 직접 만들어보세요
-            </p>
-          </div>
-
-          {/* Create button */}
-          <Link
-            href="/rooms/create"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm transition-all hover:scale-105 glow-pink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-          >
-            <Plus className="w-4 h-4" />
-            새 방 만들기
-          </Link>
+    <div className="flex min-h-full flex-1 flex-col">
+      <main className="flex-1 px-6 pt-12">
+        {/* Title + presence */}
+        <h1 className="text-[23px] font-extrabold tracking-tight text-foreground">
+          Together FM
+        </h1>
+        <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-transparent bg-white px-3 py-1 holo-ring">
+          <span className="h-2 w-2 rounded-full" style={{ background: '#b8a0e8' }} />
+          <span className="text-[11px] font-semibold text-muted-foreground">
+            지금 함께 듣는 사람 {listeners.toLocaleString()}명
+          </span>
         </div>
-      </header>
 
-      {/* Rooms list with client-side filter */}
-      <RoomsClient rooms={rooms} filterTags={FILTER_TAGS} />
-    </main>
+        {/* Search */}
+        <div className="mt-4 flex items-center gap-2.5 rounded-full border-2 border-border bg-white px-4 py-3">
+          <Search className="h-[18px] w-[18px] text-muted-foreground/70" />
+          <span className="text-[13.5px] font-medium text-muted-foreground/70">
+            방 제목, 태그로 검색
+          </span>
+        </div>
+
+        {/* Filters + room list */}
+        <RoomsClient rooms={rooms} filterTags={FILTER_TAGS} />
+      </main>
+
+      <BottomNav />
+    </div>
   )
 }

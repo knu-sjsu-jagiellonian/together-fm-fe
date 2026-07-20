@@ -11,14 +11,17 @@ interface TagPillProps {
 }
 
 export function TagPill({ label, active = false, onClick, className }: TagPillProps) {
-  const colorClass = TAG_COLORS[label] ?? 'bg-foreground/8 text-foreground/70 border-foreground/20'
+  const colorClass = TAG_COLORS[label] ?? 'bg-white text-muted-foreground border-border'
 
-  const activeClass =
-    'bg-primary/30 text-primary border-primary/60 shadow-[0_0_12px_oklch(0.68_0.28_340/40%)]'
+  // Active filter chip: holographic fill + dark bold label (mock).
+  const activeClass = 'bg-holo text-[#2c2a35] border-transparent font-extrabold'
+
+  // Inactive filter chip is a plain white pill; display-only pills keep their tint.
+  const inactiveInteractive = 'bg-white text-muted-foreground border-border'
 
   const baseClass = cn(
     'inline-flex items-center px-3 py-1 rounded-full border text-xs font-semibold tracking-wide transition-all duration-200',
-    active ? activeClass : colorClass,
+    active ? activeClass : onClick ? inactiveInteractive : colorClass,
     className,
   )
 

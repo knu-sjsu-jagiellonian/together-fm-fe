@@ -23,12 +23,12 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
       )
 
   return (
-    <section className="max-w-2xl mx-auto px-4 pb-10">
+    <section className="pb-8">
       {/* Filter chips */}
       <div
-        className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide"
+        className="-mx-6 mb-5 mt-5 flex gap-2 overflow-x-auto px-6 pb-1 scrollbar-hide"
         role="group"
-        aria-label="무드/상황 태그 필터"
+        aria-label="장르/무드/상황 태그 필터"
       >
         {filterTags.map((tag) => (
           <TagPill
@@ -41,12 +41,10 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
         ))}
       </div>
 
-      {/* Room count */}
-      <p className="text-xs text-muted-foreground mb-3">
-        {filtered.length}개의 방
-      </p>
+      {/* Section heading */}
+      <h2 className="mb-3 text-[15px] font-bold text-foreground">지금 열려있는 방</h2>
 
-      {/* Room cards grid */}
+      {/* Room cards */}
       {filtered.length > 0 ? (
         <ul className="flex flex-col gap-3" role="list">
           {filtered.map((room) => (
@@ -56,12 +54,12 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
           ))}
         </ul>
       ) : (
-        <div className="glass-card rounded-2xl p-10 flex flex-col items-center gap-3 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-[18px] border-2 border-border bg-white p-10 text-center">
           <span className="text-3xl" aria-hidden="true">🎵</span>
           <p className="text-sm text-muted-foreground">
             해당 태그의 방이 없어요.
             <br />
-            <span className="text-primary font-medium">직접 방을 만들어보세요!</span>
+            <span className="font-medium text-primary">직접 방을 만들어보세요!</span>
           </p>
         </div>
       )}

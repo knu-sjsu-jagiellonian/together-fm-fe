@@ -1,110 +1,101 @@
 import Link from 'next/link'
-import { Users, Music2, Lock } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { RoomWithDetails } from '@/lib/types'
 import { TagPill } from './tag-pill'
-import { AvatarStack } from './avatar-stack'
+import { Vinyl } from './vinyl'
 
 interface RoomCardProps {
   room: RoomWithDetails
   className?: string
 }
 
+// Per-card accent (left bar + vinyl hub), cycled deterministically by id
+// so the list keeps the mock's purple / blue / pink rhythm.
+const ACCENTS = ['#b8a0e8', '#a0c8e8', '#e8a8c0']
+function accentFor(id: string) {
+  let sum = 0
+  for (let i = 0; i < id.length; i++) sum += id.charCodeAt(i)
+  return ACCENTS[sum % ACCENTS.length]
+}
+
 export function RoomCard({ room, className }: RoomCardProps) {
   const memberCount = room.participants.length
   const isFull = memberCount >= room.max_members
+  const accent = accentFor(room.id)
 
   return (
     <Link
       href={`/rooms/${room.id}`}
       className={cn(
-        'group block glass-card rounded-2xl p-4 transition-all duration-300',
-        'hover:scale-[1.02] hover:border-white/25 hover:bg-white/10',
+        'group relative flex gap-4 overflow-hidden rounded-[18px] border-2 border-border bg-white p-4 pl-5 transition-all duration-300',
+        'hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(120,100,160,0.14)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
         className,
       )}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1">
-            {!room.is_public && (
-              <Lock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-            )}
-            <h3 className="font-bold text-sm text-foreground leading-snug line-clamp-1 text-balance">
-              {room.title}
-            </h3>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            <TagPill label={room.genre_tag} />
-            <TagPill label={room.mood_tag} />
-            <TagPill label={room.situation_tag} />
-          </div>
-        </div>
+      {/* left accent bar */}
+      <span
+        className="absolute left-0 top-0 h-full w-1 rounded-full"
+        style={{ background: accent }}
+        aria-hidden="true"
+      />
 
-        {/* Member count badge */}
-        <div
-          className={cn(
-            'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0',
-            isFull
-              ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-              : 'bg-primary/20 text-primary border border-primary/30',
+      {/* vinyl profile */}
+      <Vinyl size={86} hub={accent} className="flex-shrink-0 self-center" />
+
+      {/* body */}
+      <div className="min-w-0 flex-1">
+        <div className="mb-1.5 flex items-center gap-1.5">
+          <span className="rounded-lg bg-primary px-2 py-0.5 text-[9px] font-extrabold tracking-wide text-white">
+            LIVE
+          </span>
+          {!room.is_public && (
+            <Lock className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
           )}
-        >
-          <Users className="w-3 h-3" />
-          <span>{memberCount}/{room.max_members}</span>
         </div>
-      </div>
 
-      {/* Now playing */}
-      <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2 mb-3">
-        <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
-          <Music2 className="w-3.5 h-3.5 text-primary" />
+        <h3 className="truncate text-[15px] font-bold leading-snug text-foreground">
+          {room.title}
+        </h3>
+
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          <TagPill label={room.situation_tag} />
+          <TagPill label={room.mood_tag} />
         </div>
-        {room.current_track ? (
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-foreground truncate leading-none">
-              {room.current_track.title}
-            </p>
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {room.current_track.artist}
-            </p>
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">재생 중인 곡 없음</p>
-        )}
 
-        {/* Equalizer animation dots */}
-        {room.current_track && (
-          <div className="ml-auto flex items-end gap-0.5 h-4" aria-hidden="true">
-            {[3, 5, 4, 6, 3].map((h, i) => (
-              <div
-                key={i}
-                className="w-0.5 bg-primary rounded-full animate-bounce"
-                style={{
-                  height: `${h * 2}px`,
-                  animationDelay: `${i * 0.1}s`,
-                  animationDuration: '0.8s',
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+        <p className="mt-1.5 text-[10.5px] font-medium text-muted-foreground">
+          {memberCount}/{room.max_members}명
+          {isFull && <span className="ml-1 text-destructive">· 마감</span>}
+        </p>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between">
-        <AvatarStack participants={room.participants} maxMembers={room.max_members} size="sm" />
-        <span
-          className={cn(
-            'text-xs font-semibold px-2.5 py-1 rounded-full',
-            isFull
-              ? 'bg-red-500/20 text-red-400'
-              : 'bg-accent/20 text-accent group-hover:bg-accent/30 transition-colors',
+        {/* now playing */}
+        <div className="mt-1 flex items-center justify-between gap-2">
+          {room.current_track ? (
+            <p className="truncate text-[12.5px] font-bold text-foreground">
+              {room.current_track.title} — {room.current_track.artist}
+            </p>
+          ) : (
+            <p className="text-[12.5px] text-muted-foreground">재생 중인 곡 없음</p>
           )}
-        >
-          {isFull ? '인원 마감' : '입장하기 →'}
-        </span>
+
+          {room.current_track && (
+            <span className="ml-auto flex h-5 flex-shrink-0 items-end gap-[3px]" aria-hidden="true">
+              {[8, 15, 11, 19, 12].map((h, i) => (
+                <span
+                  key={i}
+                  className="w-[3px] rounded-full motion-safe:animate-bounce"
+                  style={{
+                    height: h,
+                    background: accent,
+                    animationDelay: `${i * 0.1}s`,
+                    animationDuration: '0.9s',
+                  }}
+                />
+              ))}
+            </span>
+          )}
+        </div>
       </div>
     </Link>
   )

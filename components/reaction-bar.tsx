@@ -6,20 +6,23 @@ import type { FloatingReaction } from '@/lib/types'
 import { REACTION_EMOJIS } from '@/lib/types'
 
 interface ReactionBarProps {
+  /** Called on tap — wire to socket `reaction:send` in live mode. */
+  onEmoji?: (emoji: string) => void
   className?: string
 }
 
-export function ReactionBar({ className }: ReactionBarProps) {
+export function ReactionBar({ onEmoji, className }: ReactionBarProps) {
   const [floating, setFloating] = useState<FloatingReaction[]>([])
 
   const triggerReaction = useCallback((emoji: string) => {
+    onEmoji?.(emoji)
     const id = `r-${Date.now()}-${Math.random()}`
     const x = 10 + Math.random() * 80 // 10–90% from left
     setFloating((prev) => [...prev, { id, emoji, x }])
     setTimeout(() => {
       setFloating((prev) => prev.filter((r) => r.id !== id))
     }, 1900)
-  }, [])
+  }, [onEmoji])
 
   return (
     <div className={cn('relative', className)}>

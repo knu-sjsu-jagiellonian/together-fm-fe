@@ -1,85 +1,71 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Search, Plus, Music2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Search, Plus } from 'lucide-react'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
-import { searchTracks } from '@/lib/mock-data'
-import type { Track } from '@/lib/types'
-
-type SearchResult = Omit<Track, 'id' | 'room_id' | 'added_by' | 'position' | 'played_at'>
+import { useTrackSearch } from '@/hooks/use-track-search'
+import type { SearchResult } from '@/lib/api-types'
 
 interface TrackSearchProps {
   onAdd?: (track: SearchResult) => void
+  placeholder?: string
   className?: string
 }
 
-export function TrackSearch({ onAdd, className }: TrackSearchProps) {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchResult[]>([])
-  const [isOpen, setIsOpen] = useState(false)
-  const [added, setAdded] = useState<Set<string>>(new Set())
-  const inputRef = useRef<HTMLInputElement>(null)
+/** Backend-proxied YouTube search box (GET /api/search) with a results dropdown. */
+export function TrackSearch({ onAdd, placeholder = '노래 제목 또는 아티스트 검색', className }: TrackSearchProps) {
+  const { q, setQ, results, loading, error, reset } = useTrackSearch()
+  const [dismissed, setDismissed] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const handler = setTimeout(async () => {
-      if (query.trim()) {
-        const found = await searchTracks(query)
-        setResults(found)
-        setIsOpen(true)
-      } else {
-        setResults([])
-        setIsOpen(false)
-      }
-    }, 200)
-    return () => clearTimeout(handler)
-  }, [query])
+  // Derived — no effect needed. Open while typing and not manually dismissed.
+  const isOpen = q.trim().length > 0 && !dismissed
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false)
+        setDismissed(true)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const handleChange = (value: string) => {
+    setQ(value)
+    setDismissed(false)
+  }
+
   const handleAdd = (track: SearchResult) => {
-    const key = `${track.title}-${track.artist}`
-    if (added.has(key)) return
-    setAdded((prev) => new Set([...prev, key]))
     onAdd?.(track)
-    setQuery('')
-    setIsOpen(false)
-    setTimeout(() => {
-      setAdded((prev) => { const n = new Set(prev); n.delete(key); return n })
-    }, 2000)
+    reset()
   }
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
-      {/* Search input */}
-      <div className="glass-card rounded-2xl flex items-center gap-3 px-4 py-3">
-        <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      {/* input */}
+      <div className="flex items-center gap-2.5 rounded-[14px] border-2 border-border bg-white px-4 py-3">
+        <Search className="h-[18px] w-[18px] flex-shrink-0 text-muted-foreground/70" />
         <input
-          ref={inputRef}
           type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="곡 제목 또는 아티스트 검색..."
-          className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+          value={q}
+          onChange={(e) => handleChange(e.target.value)}
+          onFocus={() => setDismissed(false)}
+          placeholder={placeholder}
+          className="flex-1 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
           aria-label="곡 검색"
           aria-expanded={isOpen}
           aria-controls="track-search-listbox"
           aria-autocomplete="list"
           role="combobox"
         />
-        {query && (
+        {loading && <span className="text-[11px] font-medium text-muted-foreground">검색중…</span>}
+        {q && !loading && (
           <button
             type="button"
-            onClick={() => { setQuery(''); setIsOpen(false) }}
-            className="text-muted-foreground hover:text-foreground transition-colors text-xs"
+            onClick={reset}
+            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
             aria-label="검색어 지우기"
           >
             ✕
@@ -87,62 +73,55 @@ export function TrackSearch({ onAdd, className }: TrackSearchProps) {
         )}
       </div>
 
-      {/* Results dropdown */}
-      {isOpen && results.length > 0 && (
+      {/* dropdown */}
+      {isOpen && (results.length > 0 || error) && (
         <div
           id="track-search-listbox"
-          className="absolute top-full left-0 right-0 mt-2 glass-card rounded-2xl overflow-hidden z-50"
+          className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[14px] border-2 border-border bg-white shadow-[0_10px_28px_rgba(120,100,160,0.16)]"
           role="listbox"
           aria-label="검색 결과"
         >
-          <ul className="divide-y divide-border max-h-56 overflow-y-auto">
-            {results.map((track) => {
-              const key = `${track.title}-${track.artist}`
-              const isAdded = added.has(key)
-              return (
+          {error ? (
+            <p className="px-4 py-4 text-center text-[13px] text-destructive">{error}</p>
+          ) : (
+            <ul className="max-h-64 divide-y divide-border overflow-y-auto">
+              {results.map((track) => (
                 <li
-                  key={key}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-white/8 transition-colors"
+                  key={track.videoId}
+                  className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-secondary/40"
                   role="option"
-                  aria-selected={isAdded}
+                  aria-selected={false}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
-                    <Music2 className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{track.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
+                  <Image
+                    src={track.thumbnail}
+                    alt=""
+                    width={44}
+                    height={44}
+                    className="h-11 w-11 flex-shrink-0 rounded-lg object-cover"
+                    unoptimized
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-bold text-foreground">{track.title}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">{track.artist}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleAdd(track)}
-                    disabled={isAdded}
-                    className={cn(
-                      'flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
-                      isAdded
-                        ? 'bg-accent/20 border border-accent/40 cursor-default'
-                        : 'bg-primary/20 hover:bg-primary/40 border border-primary/40 hover:scale-110',
-                    )}
-                    aria-label={isAdded ? '추가됨' : `${track.title} 추가`}
+                    className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-primary/15 text-primary transition-all hover:scale-110 hover:bg-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                    aria-label={`${track.title} 추가`}
                   >
-                    {isAdded
-                      ? <span className="text-accent text-xs">✓</span>
-                      : <Plus className="w-3.5 h-3.5 text-primary" />
-                    }
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
                 </li>
-              )
-            })}
-          </ul>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
-      {isOpen && query && results.length === 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 glass-card rounded-2xl p-4 text-center z-50">
-          <p className="text-sm text-muted-foreground">
-            &quot;{query}&quot; 검색 결과가 없어요
-          </p>
+      {isOpen && !loading && !error && q.trim() && results.length === 0 && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-[14px] border-2 border-border bg-white p-4 text-center">
+          <p className="text-[13px] text-muted-foreground">&quot;{q}&quot; 검색 결과가 없어요</p>
         </div>
       )}
     </div>

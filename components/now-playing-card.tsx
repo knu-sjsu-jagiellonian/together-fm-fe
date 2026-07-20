@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { Music2, SkipForward, SkipBack, Play, Pause } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, ytThumb } from '@/lib/utils'
 import type { Track } from '@/lib/types'
 import { Vinyl } from './vinyl'
 
@@ -57,8 +58,29 @@ export function NowPlayingCard({ track, className }: NowPlayingCardProps) {
   return (
     <div className={cn('rounded-[22px] border-2 border-border bg-white p-5', className)}>
       <div className="flex items-center gap-4">
-        {/* Vinyl thumbnail */}
-        <Vinyl size={58} hub="#b8a0e8" holoRing spinning={isPlaying} className="flex-shrink-0" />
+        {/* Album art with a record peeking behind it (falls back to vinyl) */}
+        {(() => {
+          const cover = track.album_art ?? ytThumb(track.video_id)
+          if (!cover) return <Vinyl size={58} hub="#b8a0e8" holoRing spinning={isPlaying} className="flex-shrink-0" />
+          return (
+            <span className="relative flex-shrink-0" style={{ width: 76, height: 60 }}>
+              <Vinyl
+                size={54}
+                hub="#b8a0e8"
+                spinning={isPlaying}
+                className="absolute right-0 top-1/2 -translate-y-1/2"
+              />
+              <Image
+                src={cover}
+                alt=""
+                width={60}
+                height={60}
+                unoptimized
+                className="absolute left-0 top-1/2 z-10 h-[60px] w-[60px] -translate-y-1/2 rounded-xl border-2 border-white object-cover shadow-sm"
+              />
+            </span>
+          )
+        })()}
 
         {/* Track info */}
         <div className="min-w-0 flex-1">

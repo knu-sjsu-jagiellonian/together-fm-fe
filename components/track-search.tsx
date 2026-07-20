@@ -13,77 +13,86 @@ interface TrackSearchProps {
   className?: string
 }
 
-/** Backend-proxied YouTube search box (GET /api/search) with a results dropdown. */
-export function TrackSearch({ onAdd, placeholder = '노래 제목 또는 아티스트 검색', className }: TrackSearchProps) {
-  const { q, setQ, results, loading, error, reset } = useTrackSearch()
-  const [dismissed, setDismissed] = useState(false)
+/**
+ * Backend-proxied YouTube search box. Searches on Enter (or the search button),
+ * not per keystroke, then lets you pick a result to add.
+ */
+export function TrackSearch({ onAdd, placeholder = '노래 제목·아티스트 입력 후 Enter', className }: TrackSearchProps) {
+  const { results, loading, error, searched, search, reset } = useTrackSearch()
+  const [q, setQ] = useState('')
+  const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-
-  // Derived — no effect needed. Open while typing and not manually dismissed.
-  const isOpen = q.trim().length > 0 && !dismissed
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setDismissed(true)
+        setOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleChange = (value: string) => {
-    setQ(value)
-    setDismissed(false)
+  const runSearch = () => {
+    if (!q.trim()) return
+    setOpen(true)
+    search(q)
   }
 
   const handleAdd = (track: SearchResult) => {
     onAdd?.(track)
+    setQ('')
     reset()
+    setOpen(false)
   }
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
       {/* input */}
-      <div className="flex items-center gap-2.5 rounded-[14px] border-2 border-border bg-white px-4 py-3">
-        <Search className="h-[18px] w-[18px] flex-shrink-0 text-muted-foreground/70" />
+      <div className="flex items-center gap-2.5 rounded-[14px] border-2 border-border bg-white px-4 py-3 focus-within:border-primary">
         <input
           type="text"
           value={q}
-          onChange={(e) => handleChange(e.target.value)}
-          onFocus={() => setDismissed(false)}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              runSearch()
+            }
+          }}
+          onFocus={() => searched && setOpen(true)}
           placeholder={placeholder}
           className="flex-1 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
           aria-label="곡 검색"
-          aria-expanded={isOpen}
+          aria-expanded={open}
           aria-controls="track-search-listbox"
           aria-autocomplete="list"
           role="combobox"
         />
-        {loading && <span className="text-[11px] font-medium text-muted-foreground">검색중…</span>}
-        {q && !loading && (
-          <button
-            type="button"
-            onClick={reset}
-            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
-            aria-label="검색어 지우기"
-          >
-            ✕
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={runSearch}
+          disabled={!q.trim() || loading}
+          className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-primary/15 text-primary transition-colors hover:bg-primary/25 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          aria-label="검색"
+        >
+          <Search className="h-[15px] w-[15px]" />
+        </button>
       </div>
 
       {/* dropdown */}
-      {isOpen && (results.length > 0 || error) && (
+      {open && (loading || error || results.length > 0 || searched) && (
         <div
           id="track-search-listbox"
           className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[14px] border-2 border-border bg-white shadow-[0_10px_28px_rgba(120,100,160,0.16)]"
           role="listbox"
           aria-label="검색 결과"
         >
-          {error ? (
+          {loading ? (
+            <p className="px-4 py-4 text-center text-[13px] text-muted-foreground">검색 중…</p>
+          ) : error ? (
             <p className="px-4 py-4 text-center text-[13px] text-destructive">{error}</p>
-          ) : (
+          ) : results.length > 0 ? (
             <ul className="max-h-64 divide-y divide-border overflow-y-auto">
               {results.map((track) => (
                 <li
@@ -115,13 +124,9 @@ export function TrackSearch({ onAdd, placeholder = '노래 제목 또는 아티�
                 </li>
               ))}
             </ul>
+          ) : (
+            <p className="px-4 py-4 text-center text-[13px] text-muted-foreground">검색 결과가 없어요</p>
           )}
-        </div>
-      )}
-
-      {isOpen && !loading && !error && q.trim() && results.length === 0 && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-[14px] border-2 border-border bg-white p-4 text-center">
-          <p className="text-[13px] text-muted-foreground">&quot;{q}&quot; 검색 결과가 없어요</p>
         </div>
       )}
     </div>

@@ -1,60 +1,48 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { api, ApiError } from '@/lib/api'
 import type { SearchResult } from '@/lib/api-types'
 
 /**
- * Debounced YouTube search via the backend proxy (GET /api/search).
- * Debounce is mandatory: search costs 100 quota units (~100 calls/day). See API.md §3.
+ * On-demand YouTube search via the backend proxy (GET /api/search).
+ * Search runs only when `search()` is called (e.g. on Enter), never per keystroke —
+ * each call costs 100 quota units (~100/day). See API.md §3.
  */
-export function useTrackSearch(delay = 600) {
-  const [q, setQ] = useState('')
+export function useTrackSearch() {
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [searched, setSearched] = useState(false)
 
-  useEffect(() => {
-    if (timer.current) clearTimeout(timer.current)
-
-    const query = q.trim()
-    if (!query) {
-      // Clear via a microtask so we never setState synchronously in the effect body.
-      timer.current = setTimeout(() => {
-        setResults([])
-        setError(null)
-        setLoading(false)
-      }, 0)
-      return () => {
-        if (timer.current) clearTimeout(timer.current)
-      }
+  const search = useCallback(async (query: string) => {
+    const q = query.trim()
+    if (!q) {
+      setResults([])
+      setSearched(false)
+      setError(null)
+      return
     }
-
-    timer.current = setTimeout(async () => {
-      setLoading(true)
-      try {
-        setResults(await api.search(query))
-        setError(null)
-      } catch (e) {
-        // Surface the server's Korean message (e.g. 503 quota) directly.
-        setError(e instanceof ApiError ? e.message : '검색 중 문제가 발생했어요')
-        setResults([])
-      } finally {
-        setLoading(false)
-      }
-    }, delay)
-
-    return () => {
-      if (timer.current) clearTimeout(timer.current)
+    setLoading(true)
+    setSearched(true)
+    setError(null)
+    try {
+      setResults(await api.search(q))
+    } catch (e) {
+      // Surface the server's Korean message (e.g. 503 quota) directly.
+      setError(e instanceof ApiError ? e.message : '검색 중 문제가 발생했어요')
+      setResults([])
+    } finally {
+      setLoading(false)
     }
-  }, [q, delay])
+  }, [])
 
-  const reset = () => {
-    setQ('')
+  const reset = useCallback(() => {
     setResults([])
     setError(null)
-  }
+    setSearched(false)
+    setLoading(false)
+  }, [])
 
-  return { q, setQ, results, loading, error, reset }
+  return { results, loading, error, searched, search, reset }
 }

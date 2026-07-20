@@ -197,7 +197,7 @@ export function CreateRoomForm() {
 
       {/* first track — real search */}
       <div>
-        <FieldLabel>첫 트랙 설정 (필수)</FieldLabel>
+        <FieldLabel>첫 트랙 설정</FieldLabel>
         {track ? (
           <div className="flex items-center gap-3 rounded-[16px] border-2 border-primary/50 bg-white p-3">
             <Image src={track.thumbnail} alt="" width={48} height={48} unoptimized className="h-12 w-12 flex-shrink-0 rounded-lg object-cover" />
@@ -211,9 +211,6 @@ export function CreateRoomForm() {
           </div>
         ) : (
           <TrackSearch onAdd={setTrack} />
-        )}
-        {!track && (
-          <p className="mt-3 text-[11.5px] font-medium text-muted-foreground/80">첫 곡을 설정해야 빈 방을 방지할 수 있어요</p>
         )}
       </div>
 

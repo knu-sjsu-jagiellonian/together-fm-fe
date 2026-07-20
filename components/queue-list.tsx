@@ -1,72 +1,61 @@
 'use client'
 
-import { Music2, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Track } from '@/lib/types'
+
+type SearchResult = Omit<Track, 'id' | 'room_id' | 'added_by' | 'position' | 'played_at'>
 
 interface QueueListProps {
   queue: Track[]
   onRemove?: (trackId: string) => void
+  onAdd?: (track: SearchResult) => void
   className?: string
 }
 
-export function QueueList({ queue, onRemove, className }: QueueListProps) {
-  if (queue.length === 0) {
-    return (
-      <div className={cn('glass-card rounded-2xl p-6 flex flex-col items-center gap-2', className)}>
-        <Music2 className="w-8 h-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground text-center">
-          대기 중인 곡이 없어요.<br />
-          <span className="text-primary font-medium">첫 곡을 추가해보세요!</span>
-        </p>
-      </div>
-    )
-  }
+// Demo tracks the "+ 곡 추가" chip cycles through (mockup-level stand-in for search).
+const DEMO_TRACKS: SearchResult[] = [
+  { title: 'Ditto', artist: 'NewJeans', duration_sec: 185 },
+  { title: '사건의 지평선', artist: '윤하', duration_sec: 260 },
+  { title: 'Attention', artist: 'NewJeans', duration_sec: 180 },
+]
 
+export function QueueList({ queue, onRemove, onAdd, className }: QueueListProps) {
   return (
-    <div className={cn('glass-card rounded-2xl overflow-hidden', className)}>
-      <div className="px-4 py-3 border-b border-border">
-        <h2 className="font-bold text-sm text-foreground">
-          다음 곡{' '}
-          <span className="text-muted-foreground font-normal">({queue.length})</span>
-        </h2>
-      </div>
-      <ul className="divide-y divide-border" role="list">
-        {queue.map((track, idx) => (
-          <li
+    <section className={cn('', className)}>
+      <h2 className="mb-2 text-[11.5px] font-bold text-muted-foreground">다음 곡 (FIFO)</h2>
+      <div className="-mx-6 flex gap-2 overflow-x-auto px-6 pb-1 scrollbar-hide">
+        {queue.map((track) => (
+          <div
             key={track.id}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group"
+            className="group relative flex h-[46px] w-[76px] flex-shrink-0 flex-col items-center justify-center rounded-[12px] border-2 border-border bg-white px-1.5"
           >
-            {/* Position number */}
-            <span className="w-5 text-center text-xs font-mono text-muted-foreground flex-shrink-0">
-              {idx + 1}
+            <span className="w-full truncate text-center text-[10px] font-bold text-foreground">
+              {track.title}
             </span>
-
-            {/* Track info */}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate leading-tight">
-                {track.title}
-              </p>
-              <p className="text-xs text-muted-foreground truncate mt-0.5">
-                {track.artist}{' '}
-                <span className="text-primary/70">· {track.added_by}</span>
-              </p>
-            </div>
-
-            {/* Remove button */}
             {onRemove && (
               <button
                 type="button"
                 onClick={() => onRemove(track.id)}
-                className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 flex items-center justify-center transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-400 flex-shrink-0"
+                className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full border border-border bg-white text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none"
                 aria-label={`${track.title} 제거`}
               >
-                <X className="w-3 h-3 text-red-400" />
+                <X className="h-2.5 w-2.5" />
               </button>
             )}
-          </li>
+          </div>
         ))}
-      </ul>
-    </div>
+
+        {onAdd && (
+          <button
+            type="button"
+            onClick={() => onAdd(DEMO_TRACKS[queue.length % DEMO_TRACKS.length])}
+            className="flex h-[46px] w-[76px] flex-shrink-0 items-center justify-center rounded-[12px] border-2 border-dashed border-border bg-secondary/40 text-[9.5px] font-bold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          >
+            + 곡 추가
+          </button>
+        )}
+      </div>
+    </section>
   )
 }

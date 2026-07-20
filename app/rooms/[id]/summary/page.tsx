@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Download, RotateCcw, Music2 } from 'lucide-react'
 import { getRoomSummary } from '@/lib/mock-data'
-import { AppHeader } from '@/components/app-header'
 import { TagPill } from '@/components/tag-pill'
+import { Vinyl } from '@/components/vinyl'
+import { Minimi } from '@/components/minimi'
 
 interface SummaryPageProps {
   params: Promise<{ id: string }>
@@ -16,133 +16,99 @@ export default async function SummaryPage({ params }: SummaryPageProps) {
 
   const { room, participants, tracks, durationMin } = data
 
+  // No reaction tally in the mock data layer yet — derive a stable stand-in.
+  const reactionCount = tracks.length * 13 + participants.length
+  const hours = Math.floor(durationMin / 60)
+  const mins = durationMin % 60
+  const durationLabel = hours > 0 ? `${hours}시간 ${mins}분` : `${mins}분`
+
+  const visibleParticipants = participants.slice(0, 7)
+  const extra = participants.length - visibleParticipants.length
+  const meId = participants[participants.length - 1]?.id
+
   return (
-    <main className="min-h-screen sparkle-bg">
-      <AppHeader back={{ href: '/rooms', label: '방 목록으로' }} />
-
-      <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-5">
-
-        {/* Hero summary card */}
-        <section className="glass-card chrome-frame rounded-2xl p-6 glow-pink text-center">
-          {/* Confetti-like sparkle decoration */}
-          <div className="flex justify-center gap-1.5 mb-4" aria-hidden="true">
-            {['✦', '✦', '✦'].map((s, i) => (
-              <span key={i} className="text-primary text-sm opacity-70" style={{ animationDelay: `${i * 0.2}s` }}>
-                {s}
-              </span>
-            ))}
-          </div>
-
-          <h1 className="text-2xl font-bold text-foreground mb-1 text-balance">
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              {durationMin}분
-            </span>{' '}
-            동안
-          </h1>
-          <p className="text-lg font-bold text-foreground mb-4 text-balance">
-            <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-              {tracks.length}곡
-            </span>
-            을 함께 들었어요
-          </p>
-
-          <p className="text-sm text-muted-foreground mb-4 text-balance">
-            {room.title}
-          </p>
-
-          <div className="flex justify-center gap-2 flex-wrap">
-            <TagPill label={room.genre_tag} />
-            <TagPill label={room.mood_tag} />
-            <TagPill label={room.situation_tag} />
-          </div>
-        </section>
-
-        {/* Participants */}
-        <section className="glass-card rounded-2xl p-4">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            함께한 사람 ({participants.length})
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {participants.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full border"
-                style={{
-                  backgroundColor: `${p.avatar_color}18`,
-                  borderColor: `${p.avatar_color}44`,
-                }}
-              >
-                <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ backgroundColor: p.avatar_color }}
-                >
-                  {p.name.slice(0, 1)}
-                </div>
-                <span
-                  className="text-xs font-semibold"
-                  style={{ color: p.avatar_color }}
-                >
-                  {p.name}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Full playlist */}
-        <section className="glass-card rounded-2xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <h2 className="font-bold text-sm text-foreground">
-              전체 플레이리스트
-            </h2>
-            <span className="text-xs text-muted-foreground">{tracks.length}곡</span>
-          </div>
-          <ul className="divide-y divide-border" role="list">
-            {tracks.map((track, idx) => (
-              <li
-                key={track.id}
-                className="flex items-center gap-3 px-4 py-3"
-              >
-                <span className="w-5 text-center text-xs font-mono text-muted-foreground flex-shrink-0">
-                  {idx + 1}
-                </span>
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center flex-shrink-0">
-                  <Music2 className="w-3.5 h-3.5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate leading-tight">
-                    {track.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {track.artist}
-                  </p>
-                </div>
-                <span className="text-xs text-primary/70 flex-shrink-0 font-medium">
-                  by {track.added_by}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            type="button"
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm transition-all glow-pink hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-          >
-            <Download className="w-4 h-4" />
-            플레이리스트 저장
-          </button>
-          <Link
-            href="/rooms"
-            className="flex items-center justify-center gap-2 px-5 py-3 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-          >
-            <RotateCcw className="w-4 h-4" />
-            다른 방 찾기
-          </Link>
+    <main className="flex min-h-full flex-1 flex-col px-6 pb-8 pt-10">
+      {/* header */}
+      <div className="flex flex-col items-center text-center">
+        <Vinyl size={52} hub="#b8a0e8" holoRing />
+        <p className="mt-3 text-[12px] font-semibold text-muted-foreground">방이 종료되었어요</p>
+        <h1 className="mt-1 text-[18px] font-extrabold text-foreground">{room.title}</h1>
+        <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+          <TagPill label={room.mood_tag} />
+          <TagPill label={room.situation_tag} />
         </div>
+        <p className="mt-3 text-[11.5px] font-medium text-muted-foreground">
+          {durationLabel} 동안 함께 들었어요
+        </p>
+      </div>
+
+      {/* stats */}
+      <div className="mt-6 grid grid-cols-3 divide-x divide-secondary rounded-[18px] border-2 border-border bg-white py-4">
+        <Stat value={`${participants.length}명`} label="참여 인원" />
+        <Stat value={`${tracks.length}곡`} label="재생된 곡" />
+        <Stat value={`${reactionCount}`} label="이모지 반응" />
+      </div>
+
+      {/* playlist recap */}
+      <h2 className="mb-2.5 mt-6 text-[14.5px] font-extrabold text-foreground">플레이리스트</h2>
+      <ol className="flex flex-col rounded-[16px] border-2 border-border bg-white px-4 py-2" role="list">
+        {tracks.slice(0, 5).map((track, idx) => (
+          <li key={track.id} className="flex items-center gap-3 py-2">
+            <span className="w-4 text-[12px] font-extrabold text-primary">{idx + 1}</span>
+            <p className="min-w-0 flex-1 truncate text-[12px] font-bold text-foreground">
+              {track.title} — {track.artist}
+            </p>
+            <span className="flex-shrink-0 text-[11px] font-semibold text-muted-foreground">
+              @{track.added_by}
+            </span>
+          </li>
+        ))}
+        {tracks.length > 5 && (
+          <li className="py-2 text-center text-[11px] font-bold text-muted-foreground">
+            외 {tracks.length - 5}곡 더보기 ⌄
+          </li>
+        )}
+      </ol>
+
+      {/* participants */}
+      <h2 className="mb-2.5 mt-6 text-[14.5px] font-extrabold text-foreground">함께한 사람</h2>
+      <div className="flex items-center gap-2">
+        <ul className="flex flex-wrap gap-2" role="list">
+          {visibleParticipants.map((p) => (
+            <li key={p.id}>
+              <Minimi seed={p.id} clothes={p.avatar_color} isMe={p.id === meId} size={38} />
+            </li>
+          ))}
+        </ul>
+        {extra > 0 && (
+          <span className="text-[10.5px] font-bold text-muted-foreground">+{extra}</span>
+        )}
+      </div>
+
+      {/* actions */}
+      <div className="mt-auto flex flex-col gap-3 pt-8">
+        <button
+          type="button"
+          className="w-full rounded-full bg-holo py-4 text-[16px] font-extrabold text-[#2c2a35] transition-transform hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+        >
+          플레이리스트 다시 듣기
+        </button>
+        <Link
+          href="/rooms"
+          className="w-full rounded-full border-2 border-border py-3.5 text-center text-[14px] font-bold text-foreground transition-colors hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+        >
+          친구에게 공유하기
+        </Link>
       </div>
     </main>
+  )
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-[19px] font-extrabold text-foreground">{value}</span>
+      <span className="text-[10.5px] font-semibold text-muted-foreground">{label}</span>
+    </div>
   )
 }

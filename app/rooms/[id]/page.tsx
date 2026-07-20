@@ -14,7 +14,7 @@ export default async function RoomPage({ params }: RoomPageProps) {
   if (!room) notFound()
 
   return (
-    <main className="min-h-screen sparkle-bg">
+    <main className="flex min-h-full flex-1 flex-col">
       <AppHeader
         back={{ href: '/rooms', label: '방 목록' }}
         title={room.title}

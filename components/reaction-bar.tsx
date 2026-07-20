@@ -41,7 +41,7 @@ export function ReactionBar({ className }: ReactionBarProps) {
 
       {/* Buttons */}
       <div
-        className="glass-card rounded-2xl px-4 py-3 flex items-center justify-around"
+        className="flex items-center justify-around rounded-full border-2 border-border bg-white px-3 py-2"
         role="group"
         aria-label="이모지 리액션"
       >
@@ -51,9 +51,8 @@ export function ReactionBar({ className }: ReactionBarProps) {
             type="button"
             onClick={() => triggerReaction(emoji)}
             className={cn(
-              'w-10 h-10 rounded-full flex items-center justify-center text-xl',
-              'bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/25',
-              'transition-all duration-150 hover:scale-125 active:scale-95',
+              'grid h-9 w-9 place-items-center rounded-full bg-secondary/50 text-lg',
+              'transition-all duration-150 hover:scale-125 hover:bg-secondary active:scale-95',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
             )}
             aria-label={emoji}

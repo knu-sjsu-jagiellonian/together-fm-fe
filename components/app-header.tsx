@@ -8,30 +8,29 @@ interface AppHeaderProps {
 
 export function AppHeader({ back, title }: AppHeaderProps) {
   return (
-    <header className="sticky top-0 z-40 glass-card border-b border-glass-border backdrop-blur-xl">
-      <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
+    <header className="sticky top-0 z-40 border-b border-border bg-white/80 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-[440px] items-center gap-2 px-5">
         {back ? (
           <Link
             href={back.href}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-lg px-1"
+            className="flex items-center gap-1 rounded-lg px-1 text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
             aria-label={back.label}
           >
-            <span className="text-lg leading-none">←</span>
-            <span>{back.label}</span>
+            <span className="text-xl leading-none">←</span>
           </Link>
         ) : (
-          <Link href="/rooms" className="flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-lg" aria-label="Together FM 홈으로">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center glow-pink flex-shrink-0">
-              <Radio className="w-3.5 h-3.5 text-primary-foreground" />
+          <Link href="/rooms" className="group flex items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60" aria-label="Together FM 홈으로">
+            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-primary">
+              <Radio className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="font-bold text-sm tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <span className="text-sm font-extrabold tracking-tight text-foreground">
               Together FM
             </span>
           </Link>
         )}
 
         {title && (
-          <h1 className="flex-1 text-center font-bold text-sm text-foreground truncate pr-8 text-balance">
+          <h1 className="flex-1 truncate text-[16px] font-extrabold text-foreground">
             {title}
           </h1>
         )}

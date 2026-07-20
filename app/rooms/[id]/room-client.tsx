@@ -14,7 +14,7 @@ import { getToken } from '@/lib/api'
 import { getSocket, type TfmSocket } from '@/lib/socket'
 import { useClockOffset } from '@/hooks/use-clock-offset'
 import { useYouTubePlayer } from '@/hooks/use-youtube-player'
-import type { ApiTrack, Member, NowPlaying, SearchResult } from '@/lib/api-types'
+import type { Track as ApiTrack, Member, NowPlaying, SearchResult } from '@/lib/api-types'
 
 interface RoomClientProps {
   room: RoomWithDetails
@@ -99,11 +99,11 @@ export function RoomClient({ room }: RoomClientProps) {
     if (!socket || !live) return
     const s = socket
     const toDisplay = (t: ApiTrack): Track => ({
-      id: t.videoId,
+      id: t.id,
       room_id: room.id,
       title: t.title,
       artist: t.artist,
-      added_by: '',
+      added_by: t.addedBy,
       position: 0,
       played_at: null,
       duration_sec: t.durationSec,

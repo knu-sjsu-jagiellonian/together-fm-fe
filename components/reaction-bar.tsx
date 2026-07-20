@@ -1,7 +1,8 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { REACTION_EMOJIS } from '@/lib/types'
+// Use the backend's reaction set (contract) — the server ignores any other emoji.
+import { REACTION_EMOJIS } from '@/lib/api-types'
 
 interface ReactionBarProps {
   /** Called on tap — spawns the emoji next to "me" and (live) emits reaction:send. */

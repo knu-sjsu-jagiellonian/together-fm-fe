@@ -2,9 +2,9 @@
 // Attaches the dev token and surfaces the server's Korean `error` message as-is.
 
 import type {
-  ApiUser,
-  ArchivedRoom,
-  CreateRoomBody,
+  User,
+  Archive,
+  CreateRoomInput,
   RoomCard,
   SearchResult,
 } from './api-types'
@@ -51,24 +51,24 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   // auth (used once login lands)
-  users: () => req<ApiUser[]>('/api/users'),
+  users: () => req<User[]>('/api/users'),
   login: (username: string) =>
-    req<{ token: string; user: ApiUser }>('/api/login', {
+    req<{ token: string; user: User }>('/api/login', {
       method: 'POST',
       body: JSON.stringify({ username }),
     }),
-  me: () => req<ApiUser>('/api/me'),
+  me: () => req<User>('/api/me'),
 
   // rooms
   rooms: (q = '', tags = '') =>
     req<RoomCard[]>(`/api/rooms?q=${encodeURIComponent(q)}&tags=${encodeURIComponent(tags)}`),
   room: (id: string) => req<RoomCard>(`/api/rooms/${id}`),
-  createRoom: (body: CreateRoomBody) =>
+  createRoom: (body: CreateRoomInput) =>
     req<{ id: string }>('/api/rooms', { method: 'POST', body: JSON.stringify(body) }),
 
-  // search — debounce callers (100 units/call, ~100/day). See API.md §3.
+  // search — call on-demand (Enter), not per keystroke (100 units/call, ~100/day). See API.md §3.
   search: (q: string) => req<SearchResult[]>(`/api/search?q=${encodeURIComponent(q)}`),
 
   // archives
-  archive: (id: string) => req<ArchivedRoom>(`/api/archives/${id}`),
+  archive: (id: string) => req<Archive>(`/api/archives/${id}`),
 }

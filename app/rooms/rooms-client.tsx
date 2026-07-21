@@ -27,7 +27,7 @@ export function RoomsClient({ initialRooms, filterTags }: RoomsClientProps) {
   const [pw, setPw] = useState('')
   const [pwError, setPwError] = useState(false)
 
-  // When logged in (token present) fetch the real room list.
+  // When logged in, show the mock test rooms plus the live backend rooms.
   useEffect(() => {
     if (!getToken()) return
     let cancelled = false
@@ -35,9 +35,9 @@ export function RoomsClient({ initialRooms, filterTags }: RoomsClientProps) {
       setLoading(true)
       try {
         const list = await api.rooms()
-        if (!cancelled) setRooms(list.map(fromApiRoom))
+        if (!cancelled) setRooms([...initialRooms, ...list.map(fromApiRoom)])
       } catch {
-        /* keep whatever we have */
+        /* keep the mock rooms */
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -46,7 +46,7 @@ export function RoomsClient({ initialRooms, filterTags }: RoomsClientProps) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [initialRooms])
 
   const q = query.trim().toLowerCase()
   const filtered = rooms.filter((r) => {

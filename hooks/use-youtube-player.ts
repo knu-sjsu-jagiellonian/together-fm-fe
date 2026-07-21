@@ -3,14 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MutableRefObject } from 'react'
 import type { NowPlaying } from '@/lib/api-types'
-import { loadIframeApi, type YTPlayer } from '@/lib/youtube-iframe'
-
-const CONTAINER_ID = 'tfm-yt-player'
+import { loadIframeApi, createHiddenPlayerHost, type YTPlayer } from '@/lib/youtube-iframe'
 
 /**
  * Hidden 1px YouTube player that stays in sync with the server clock.
- * See API.md §6 (steps 3–6). The consuming component must render a mount node:
- *   <div id={CONTAINER_ID} /> — exported as `containerId`.
+ * See API.md §6 (steps 3–6). The player mounts into its own body-appended node
+ * (not a React-rendered one) so the IFrame swap can't break React's DOM removal.
  */
 export function useYouTubePlayer(
   serverNowRef: MutableRefObject<() => number>,
@@ -29,9 +27,13 @@ export function useYouTubePlayer(
   useEffect(() => {
     if (!enabled) return
     let cancelled = false
+    const { host, target } = createHiddenPlayerHost()
     loadIframeApi().then((YT) => {
-      if (cancelled) return
-      playerRef.current = new YT.Player(CONTAINER_ID, {
+      if (cancelled) {
+        host.remove()
+        return
+      }
+      playerRef.current = new YT.Player(target, {
         height: '1',
         width: '1',
         playerVars: { autoplay: 0, controls: 0, disablekb: 1, playsinline: 1 },
@@ -43,6 +45,8 @@ export function useYouTubePlayer(
     })
     return () => {
       cancelled = true
+      playerRef.current = null
+      host.remove()
     }
   }, [enabled])
 
@@ -102,5 +106,5 @@ export function useYouTubePlayer(
     }
   }, [ready, positionSec])
 
-  return { containerId: CONTAINER_ID, ready, syncTo, stop, unlock }
+  return { ready, syncTo, stop, unlock }
 }

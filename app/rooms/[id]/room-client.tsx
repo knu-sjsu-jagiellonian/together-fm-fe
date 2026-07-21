@@ -140,13 +140,16 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      if (getToken()) {
+      // Mock rooms (present in mock-data → initialRoom set) stay in mock mode even
+      // when logged in, so they work as always-on test fixtures. Real rooms
+      // (not in mock-data) go live via the socket.
+      if (getToken() && !initialRoom) {
         setLive(true)
         setSocket(getSocket())
       }
     }, 0)
     return () => clearTimeout(t)
-  }, [])
+  }, [initialRoom])
 
   // Join + subscribe (live only).
   useEffect(() => {
@@ -260,9 +263,6 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
       <AppHeader back={{ href: '/rooms', label: '홈' }} title={title} />
 
       <div className="flex flex-1 flex-col gap-5 px-6 pb-8 pt-4">
-        {live && <div id={player.containerId} className="pointer-events-none fixed h-px w-px opacity-0" aria-hidden="true" />}
-        {!live && <div id={localPlayer.containerId} className="pointer-events-none fixed h-px w-px opacity-0" aria-hidden="true" />}
-
         {/* Audio-unlock overlay (autoplay policy) */}
         {live && current && !audioUnlocked && (
           <button

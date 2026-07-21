@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Track } from '@/lib/types'
-import { loadIframeApi, type YTPlayer } from '@/lib/youtube-iframe'
-
-const CONTAINER_ID = 'tfm-local-player'
+import { loadIframeApi, createHiddenPlayerHost, type YTPlayer } from '@/lib/youtube-iframe'
 
 /**
  * A plain local playlist player (no server sync) so songs actually play and
@@ -31,13 +29,17 @@ export function useLocalPlayer(tracks: Track[], enabled = true) {
     indexRef.current = index
   }, [index])
 
-  // Boot the player.
+  // Boot the player into its own body node (see createHiddenPlayerHost).
   useEffect(() => {
     if (!enabled) return
     let cancelled = false
+    const { host, target } = createHiddenPlayerHost()
     loadIframeApi().then((YT) => {
-      if (cancelled) return
-      playerRef.current = new YT.Player(CONTAINER_ID, {
+      if (cancelled) {
+        host.remove()
+        return
+      }
+      playerRef.current = new YT.Player(target, {
         height: '0',
         width: '0',
         playerVars: { controls: 0, playsinline: 1, disablekb: 1 },
@@ -59,6 +61,8 @@ export function useLocalPlayer(tracks: Track[], enabled = true) {
     })
     return () => {
       cancelled = true
+      playerRef.current = null
+      host.remove()
     }
   }, [enabled])
 
@@ -131,7 +135,6 @@ export function useLocalPlayer(tracks: Track[], enabled = true) {
   const safeIndex = Math.min(index, Math.max(0, tracks.length - 1))
 
   return {
-    containerId: CONTAINER_ID,
     index: safeIndex,
     setIndex,
     current: tracks[safeIndex] ?? null,

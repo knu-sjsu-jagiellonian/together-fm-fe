@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 // Real login (backend seed accounts via POST /api/login) is a later step.
 
 const ME_KEY = 'tfm.me'
-export const DEFAULT_ME = 'Mia'
+export const DEFAULT_ME = '예원'
 export const ME_JOINED_LABEL = '2026.03 joined'
 
 export interface MockAccount {
@@ -15,13 +15,14 @@ export interface MockAccount {
   note?: string
 }
 
-// Accounts aligned with the mock data (so host/adder demos work when you switch).
+// Offline fallback accounts — the backend seed nicknames, matching the mock rooms
+// so host/adder demos work (예원 hosts room-1, 민준 hosts room-2).
 export const MOCK_ACCOUNTS: MockAccount[] = [
-  { nickname: 'Mia', note: '늦은 밤 인디 감성 방장' },
-  { nickname: 'Noah', note: '늦은 밤 인디 감성 참여자' },
-  { nickname: 'Sofia', note: '늦은 밤 인디 감성 참여자' },
-  { nickname: 'Liam', note: 'Deep Focus 방장' },
-  { nickname: 'Aria', note: 'Gym Energy 방장' },
+  { nickname: '예원', note: '인디 감성 방 방장' },
+  { nickname: '민준', note: 'Pop Party 방 방장' },
+  { nickname: '서연' },
+  { nickname: '지호' },
+  { nickname: '하은' },
 ]
 
 export function getMe(): string {

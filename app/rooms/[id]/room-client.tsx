@@ -263,8 +263,8 @@ export function RoomClient({ room }: RoomClientProps) {
       {/* reactions — right below the player */}
       <ReactionBar onEmoji={handleEmoji} />
 
-      {/* queue (list + album covers + add) */}
-      <QueueList queue={queue} onRemove={handleRemove} onAdd={handleAdd} />
+      {/* full playlist (current + queue, scrolls when long) */}
+      <QueueList current={current} queue={queue} onRemove={handleRemove} onAdd={handleAdd} />
 
       {/* leave / end */}
       <div className="flex gap-3 pt-1">

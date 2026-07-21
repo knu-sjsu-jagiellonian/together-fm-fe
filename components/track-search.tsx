@@ -93,20 +93,20 @@ export function TrackSearch({ onAdd, placeholder = '노래 제목·아티스트 
           ) : error ? (
             <p className="px-4 py-4 text-center text-[13px] text-destructive">{error}</p>
           ) : results.length > 0 ? (
-            <ul className="max-h-64 divide-y divide-border overflow-y-auto">
+            <ul className="max-h-[22rem] divide-y divide-border overflow-y-auto">
               {results.map((track) => (
                 <li
                   key={track.videoId}
-                  className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-secondary/40"
+                  className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-secondary/40"
                   role="option"
                   aria-selected={false}
                 >
                   <Image
                     src={track.thumbnail}
                     alt=""
-                    width={44}
-                    height={44}
-                    className="h-11 w-11 flex-shrink-0 rounded-lg object-cover"
+                    width={52}
+                    height={52}
+                    className="h-[52px] w-[52px] flex-shrink-0 rounded-lg object-cover"
                     unoptimized
                   />
                   <div className="min-w-0 flex-1">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { X, Plus } from 'lucide-react'
 import { cn, ytThumb } from '@/lib/utils'
@@ -10,29 +10,67 @@ import type { SearchResult } from '@/lib/api-types'
 
 interface QueueListProps {
   queue: Track[]
+  /** Currently-playing track, shown at the top of the full list. */
+  current?: Track | null
   onRemove?: (trackId: string) => void
   onAdd?: (track: SearchResult) => void
   className?: string
 }
 
-export function QueueList({ queue, onRemove, onAdd, className }: QueueListProps) {
+function Cover({ track }: { track: Track }) {
+  const cover = track.album_art ?? ytThumb(track.video_id)
+  return cover ? (
+    <Image src={cover} alt="" width={40} height={40} unoptimized className="h-10 w-10 flex-shrink-0 rounded-lg object-cover" />
+  ) : (
+    <span className="h-10 w-10 flex-shrink-0 rounded-lg bg-secondary" />
+  )
+}
+
+export function QueueList({ queue, current, onRemove, onAdd, className }: QueueListProps) {
   const [adding, setAdding] = useState(false)
+  const addRef = useRef<HTMLDivElement>(null)
+  const total = (current ? 1 : 0) + queue.length
+
+  // Bring the search into view so its dropdown has room (it sits near the page bottom).
+  useEffect(() => {
+    if (adding) addRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [adding])
 
   return (
     <section className={cn('', className)}>
-      <h2 className="mb-2 text-[12.5px] font-bold text-muted-foreground">다음 곡</h2>
+      <h2 className="mb-2 text-[12.5px] font-bold text-muted-foreground">
+        전체 곡 <span className="text-muted-foreground/60">({total})</span>
+      </h2>
 
-      <ul className="flex flex-col overflow-hidden rounded-[16px] border-2 border-border bg-white" role="list">
-        {queue.map((track, idx) => {
-          const cover = track.album_art ?? ytThumb(track.video_id)
-          return (
+      <div className="overflow-hidden rounded-[16px] border-2 border-border bg-white">
+        {/* Scrollable list — caps height and scrolls when the playlist grows */}
+        <ul className="max-h-[300px] overflow-y-auto" role="list">
+          {current && (
+            <li className="flex items-center gap-3 border-b border-border bg-secondary/30 px-3 py-2.5">
+              <span className="w-8 flex-shrink-0 text-center text-[8.5px] font-extrabold uppercase tracking-tight text-primary">
+                재생중
+              </span>
+              <Cover track={current} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-bold text-foreground">{current.title}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{current.artist}</p>
+              </div>
+              <span className="flex h-4 flex-shrink-0 items-end gap-[2px] pr-1" aria-hidden="true">
+                {[6, 12, 8, 14].map((h, i) => (
+                  <span
+                    key={i}
+                    className="w-[2.5px] rounded-full bg-primary motion-safe:animate-bounce"
+                    style={{ height: h, animationDelay: `${i * 0.12}s`, animationDuration: '0.9s' }}
+                  />
+                ))}
+              </span>
+            </li>
+          )}
+
+          {queue.map((track, idx) => (
             <li key={track.id} className="group flex items-center gap-3 border-b border-border px-3 py-2.5 last:border-b-0">
-              <span className="w-4 flex-shrink-0 text-center text-[11px] font-extrabold text-primary">{idx + 1}</span>
-              {cover ? (
-                <Image src={cover} alt="" width={40} height={40} unoptimized className="h-10 w-10 flex-shrink-0 rounded-lg object-cover" />
-              ) : (
-                <span className="h-10 w-10 flex-shrink-0 rounded-lg bg-secondary" />
-              )}
+              <span className="w-8 flex-shrink-0 text-center text-[11px] font-extrabold text-muted-foreground">{idx + 1}</span>
+              <Cover track={track} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-bold text-foreground">{track.title}</p>
                 <p className="truncate text-[11px] text-muted-foreground">
@@ -51,17 +89,19 @@ export function QueueList({ queue, onRemove, onAdd, className }: QueueListProps)
                 </button>
               )}
             </li>
-          )
-        })}
+          ))}
 
-        {queue.length === 0 && !adding && (
-          <li className="px-3 py-4 text-center text-[12px] text-muted-foreground">대기 중인 곡이 없어요</li>
-        )}
+          {total === 0 && (
+            <li className="px-3 py-6 text-center text-[12px] text-muted-foreground">아직 곡이 없어요</li>
+          )}
+        </ul>
+      </div>
 
-        {/* add row */}
-        {onAdd &&
-          (adding ? (
-            <li className="p-2.5">
+      {/* add area — OUTSIDE the overflow-hidden card so the search dropdown isn't clipped */}
+      {onAdd && (
+        <div ref={addRef} className="mt-2">
+          {adding ? (
+            <div>
               <TrackSearch
                 placeholder="유튜브에서 곡 검색"
                 onAdd={(t) => {
@@ -76,19 +116,18 @@ export function QueueList({ queue, onRemove, onAdd, className }: QueueListProps)
               >
                 닫기
               </button>
-            </li>
+            </div>
           ) : (
-            <li>
-              <button
-                type="button"
-                onClick={() => setAdding(true)}
-                className="flex w-full items-center justify-center gap-1.5 border-t border-dashed border-border py-3 text-[12.5px] font-bold text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-              >
-                <Plus className="h-4 w-4" /> 곡 추가
-              </button>
-            </li>
-          ))}
-      </ul>
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-[14px] border-2 border-dashed border-border bg-white py-3 text-[12.5px] font-bold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            >
+              <Plus className="h-4 w-4" /> 곡 추가
+            </button>
+          )}
+        </div>
+      )}
     </section>
   )
 }

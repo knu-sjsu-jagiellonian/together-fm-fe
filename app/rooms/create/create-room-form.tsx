@@ -8,18 +8,7 @@ import type { GenreTag, MoodTag, SituationTag } from '@/lib/types'
 import { GENRE_TAGS, MOOD_TAGS, SITUATION_TAGS } from '@/lib/types'
 import { TrackSearch } from '@/components/track-search'
 import { api, getToken, ApiError } from '@/lib/api'
-import { TAGS } from '@/lib/api-types'
 import type { SearchResult, TagId } from '@/lib/api-types'
-
-// Map our Korean UI tags → backend TagId. The backend only supports 8 tag ids
-// (study/travel/daily/party/workout/chill/night/drive), so genre tags and some
-// mood/situation tags have no equivalent and are dropped. TODO: reconcile the
-// FE genre/mood/situation taxonomy with the backend's tag set (product decision).
-const LABEL_TO_TAGID = new Map<string, TagId>(TAGS.map((t) => [t.label, t.id]))
-function toBackendTags(labels: string[]): TagId[] {
-  const ids = labels.map((l) => LABEL_TO_TAGID.get(l)).filter((t): t is TagId => Boolean(t))
-  return [...new Set(ids)]
-}
 
 /** Holographic multi-select chip. */
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
@@ -83,7 +72,8 @@ export function CreateRoomForm() {
     setIsSubmitting(true)
     setError(null)
 
-    const tags = toBackendTags([...genres, ...moods, ...situations])
+    // Backend tags now match our FE labels exactly — send them directly.
+    const tags = [...genres, ...moods, ...situations] as TagId[]
 
     try {
       if (getToken()) {

@@ -12,14 +12,15 @@ export type GenreTag =
   | '팝' | '인디' | '힙합' | 'R&B' | '록'
   | '일렉트로닉' | '재즈' | 'K-팝' | '로파이' | '라틴'
 
-export type FilterTag = '전체' | GenreTag | MoodTag | SituationTag
+/** Any single tag (genre / mood / situation). Matches the backend TagId union. */
+export type Tag = GenreTag | MoodTag | SituationTag
+
+export type FilterTag = '전체' | Tag
 
 export interface Room {
   id: string
   title: string
-  genre_tag: GenreTag
-  mood_tag: MoodTag
-  situation_tag: SituationTag
+  tags: Tag[]         // genre / mood / situation tags, N of them
   max_members: number
   is_public: boolean
   password?: string   // set for private rooms (mock; max 8 chars)

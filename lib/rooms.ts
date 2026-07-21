@@ -20,7 +20,7 @@ export function fromMockRoom(r: RoomWithDetails): RoomListItem {
   return {
     id: r.id,
     title: r.title,
-    tags: [r.genre_tag, r.mood_tag, r.situation_tag],
+    tags: r.tags,
     memberCount: r.participants.length,
     maxMembers: r.max_members,
     isPublic: r.is_public,

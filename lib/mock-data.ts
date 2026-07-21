@@ -64,9 +64,7 @@ export const MOCK_ROOMS: Room[] = [
   {
     id: 'room-1',
     title: '늦은 밤 인디 감성 🌙 [테스트]',
-    genre_tag: '인디',
-    mood_tag: '감성적인',
-    situation_tag: '취침',
+    tags: ['인디', '감성적인', '취침'],
     max_members: 8,
     is_public: true,
     host: '예원',
@@ -76,9 +74,7 @@ export const MOCK_ROOMS: Room[] = [
   {
     id: 'room-2',
     title: 'Friday Night Pop Party 🎉 [테스트]',
-    genre_tag: '팝',
-    mood_tag: '파티',
-    situation_tag: '일상',
+    tags: ['팝', '파티', '일상'],
     max_members: 10,
     is_public: true,
     host: '민준',

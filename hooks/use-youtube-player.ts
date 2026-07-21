@@ -17,6 +17,9 @@ export function useYouTubePlayer(
   const playerRef = useRef<YTPlayer | null>(null)
   const currentRef = useRef<NowPlaying | null>(null)
   const [ready, setReady] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [duration, setDuration] = useState(0)
 
   const positionSec = useCallback(
     (current: NowPlaying) => (serverNowRef.current() - current.startedAtServerMs) / 1000,
@@ -39,7 +42,14 @@ export function useYouTubePlayer(
         playerVars: { autoplay: 0, controls: 0, disablekb: 1, playsinline: 1 },
         events: {
           onReady: () => setReady(true),
-          // Ignore onStateChange ENDED — track transitions are decided by the server.
+          // Reflect real playback state on the now-playing card.
+          // (Track transitions are still decided by the server, not by ENDED.)
+          onStateChange: (e: { data: number }) => {
+            const S = window.YT?.PlayerState
+            if (!S) return
+            if (e.data === S.PLAYING) setIsPlaying(true)
+            if (e.data === S.PAUSED || e.data === S.ENDED) setIsPlaying(false)
+          },
         },
       })
     })
@@ -82,6 +92,15 @@ export function useYouTubePlayer(
     playerRef.current?.playVideo()
   }, [syncTo])
 
+  /** Pause/resume own audio (the drift loop re-syncs on resume; others unaffected). */
+  const toggle = useCallback(() => {
+    const player = playerRef.current
+    const YT = window.YT
+    if (!player || !YT) return
+    if (player.getPlayerState() === YT.PlayerState.PLAYING) player.pauseVideo()
+    else player.playVideo()
+  }, [])
+
   // Drift correction every 2s + on tab refocus.
   useEffect(() => {
     if (!ready) return
@@ -106,5 +125,18 @@ export function useYouTubePlayer(
     }
   }, [ready, positionSec])
 
-  return { ready, syncTo, stop, unlock }
+  // Progress ticker for the now-playing UI.
+  useEffect(() => {
+    if (!ready) return
+    const timer = setInterval(() => {
+      const player = playerRef.current
+      if (!player) return
+      const d = player.getDuration() || 0
+      if (d) setDuration(d)
+      setProgress(player.getCurrentTime() || 0)
+    }, 500)
+    return () => clearInterval(timer)
+  }, [ready])
+
+  return { ready, isPlaying, progress, duration, syncTo, stop, unlock, toggle }
 }

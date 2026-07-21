@@ -12,7 +12,7 @@ import { TagPill } from '@/components/tag-pill'
 import { Vinyl } from '@/components/vinyl'
 import { Minimi } from '@/components/minimi'
 import { getToken } from '@/lib/api'
-import { useMe, bumpReactionsSent, bumpSongsListened } from '@/lib/me'
+import { useMe, useMyUserId, bumpReactionsSent, bumpSongsListened } from '@/lib/me'
 import { getSocket, type TfmSocket } from '@/lib/socket'
 import { useClockOffset } from '@/hooks/use-clock-offset'
 import { useYouTubePlayer } from '@/hooks/use-youtube-player'
@@ -26,6 +26,7 @@ interface RoomClientProps {
 
 interface MemberView {
   id: string
+  userId: string
   name: string
   color: string
 }
@@ -77,7 +78,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
     room ? (room.current_track ? [room.current_track, ...room.queue] : [...room.queue]) : [],
   )
   const [members, setMembers] = useState<MemberView[]>(
-    room?.participants.map((p) => ({ id: p.id, name: p.name, color: p.avatar_color })) ?? [],
+    room?.participants.map((p) => ({ id: p.id, userId: p.id, name: p.name, color: p.avatar_color })) ?? [],
   )
   const [notice, setNotice] = useState<string | null>(null)
   const [bursts, setBursts] = useState<Burst[]>([])
@@ -106,19 +107,24 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
 
   // Display meta: live snapshot wins, else mock room, else placeholder.
   const title = liveMeta?.title ?? room?.title ?? '방'
-  const tags: string[] = liveMeta
-    ? liveMeta.tags
-    : room
-      ? [room.genre_tag, room.mood_tag, room.situation_tag]
-      : []
+  const tags: string[] = liveMeta ? liveMeta.tags : room ? room.tags : []
   const hostNickname = liveMeta?.hostNickname ?? room?.host
 
   const me = useMe()
-  const isHost = hostNickname === me
+  const myUserId = useMyUserId()
+
+  // Identify "me" among members by userId in live mode (robust across same nicknames),
+  // by nickname in mock mode (mock participants have no backend userId).
+  const foundMe = live
+    ? members.findIndex((m) => m.userId === myUserId)
+    : members.findIndex((m) => m.name === me)
+  const meIndex = foundMe >= 0 ? foundMe : members.length - 1
+
+  // Host: live → my member's nickname matches the room's hostNickname (resolved via my
+  // userId); mock → the room's host nickname. added-by check stays by nickname.
+  const isHost = live ? foundMe >= 0 && members[foundMe]?.name === hostNickname : room?.host === me
   const canRemove = (t: Track) => isHost || t.added_by === me
 
-  const foundMe = members.findIndex((m) => m.name === me)
-  const meIndex = foundMe >= 0 ? foundMe : members.length - 1
   const positions = circlePositions(Math.max(members.length, 1))
 
   // Count each song listened (mock activity for the profile).
@@ -163,7 +169,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
     }
     const onQueue = (q: ApiTrack[]) => setQueue(q.map(toDisplay))
     const onMembers = (ms: Member[]) =>
-      setMembers(ms.map((m) => ({ id: m.id, name: m.nickname, color: colorFor(m.nickname) })))
+      setMembers(ms.map((m) => ({ id: m.id, userId: m.userId, name: m.nickname, color: colorFor(m.nickname) })))
     const onReaction = ({ emoji, nickname }: { emoji: string; nickname: string }) => {
       const idx = membersRef.current.findIndex((m) => m.name === nickname)
       spawnBurst(emoji, idx >= 0 ? idx : membersRef.current.length - 1)
@@ -189,7 +195,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
       if (!snap) return
       setLiveMeta(snap.room)
       setQueue(snap.queue.map(toDisplay))
-      setMembers(snap.members.map((m) => ({ id: m.id, name: m.nickname, color: colorFor(m.nickname) })))
+      setMembers(snap.members.map((m) => ({ id: m.id, userId: m.userId, name: m.nickname, color: colorFor(m.nickname) })))
       if (snap.current) {
         setCurrent(toDisplay(snap.current.track))
         syncToRef.current(snap.current)
@@ -320,10 +326,11 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
         {/* now playing */}
         <NowPlayingCard
           track={displayCurrent}
-          isPlaying={live ? false : localPlayer.isPlaying}
-          progressSec={live ? 0 : localPlayer.progress}
-          durationSec={live ? displayCurrent?.duration_sec : localPlayer.duration}
-          onToggle={live ? undefined : localPlayer.toggle}
+          isPlaying={live ? player.isPlaying : localPlayer.isPlaying}
+          progressSec={live ? player.progress : localPlayer.progress}
+          durationSec={live ? player.duration || displayCurrent?.duration_sec : localPlayer.duration}
+          onToggle={live ? player.toggle : localPlayer.toggle}
+          // In live mode the server decides track order, so no manual next/prev.
           onNext={live ? undefined : localPlayer.next}
           onPrev={live ? undefined : localPlayer.prev}
           hasNext={live ? false : localPlayer.hasNext}

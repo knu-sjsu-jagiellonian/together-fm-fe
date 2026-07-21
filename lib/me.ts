@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 // Real login (backend seed accounts via POST /api/login) is a later step.
 
 const ME_KEY = 'tfm.me'
+const ME_USER_ID_KEY = 'tfm.userId'
 export const DEFAULT_ME = '예원'
 export const ME_JOINED_LABEL = '2026.03 joined'
 
@@ -35,11 +36,27 @@ export function setMe(nickname: string) {
 }
 
 export function clearMe() {
-  if (typeof window !== 'undefined') localStorage.removeItem(ME_KEY)
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(ME_KEY)
+    localStorage.removeItem(ME_USER_ID_KEY)
+  }
 }
 
 export function hasMe(): boolean {
   return typeof window !== 'undefined' && localStorage.getItem(ME_KEY) !== null
+}
+
+// Stable user id from the authenticated account (used to identify "me" among room
+// members and to decide host — more robust than comparing nicknames).
+export function getMyUserId(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem(ME_USER_ID_KEY)
+}
+
+export function setMyUserId(id: string | null) {
+  if (typeof window === 'undefined') return
+  if (id) localStorage.setItem(ME_USER_ID_KEY, id)
+  else localStorage.removeItem(ME_USER_ID_KEY)
 }
 
 /** Client hook that resolves the stored nickname after mount (SSR-safe). */
@@ -50,6 +67,16 @@ export function useMe(): string {
     return () => clearTimeout(t)
   }, [])
   return me
+}
+
+/** Client hook for the authenticated user id (null in mock mode). */
+export function useMyUserId(): string | null {
+  const [id, setState] = useState<string | null>(null)
+  useEffect(() => {
+    const t = setTimeout(() => setState(getMyUserId()), 0)
+    return () => clearTimeout(t)
+  }, [])
+  return id
 }
 
 // ── Session counters (localStorage so the profile shows real activity) ──

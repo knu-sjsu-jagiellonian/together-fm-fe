@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Radio, ChevronRight } from 'lucide-react'
 import { Minimi } from '@/components/minimi'
 import { api, setToken, ApiError } from '@/lib/api'
-import { MOCK_ACCOUNTS, setMe } from '@/lib/me'
+import { disconnectSocket } from '@/lib/socket'
+import { MOCK_ACCOUNTS, setMe, setMyUserId } from '@/lib/me'
 import type { User } from '@/lib/api-types'
 
 /**
@@ -38,6 +39,8 @@ export function LoginClient() {
       const res = await api.login(u.username)
       setToken(res.token)
       setMe(res.user.nickname)
+      setMyUserId(res.user.id)
+      disconnectSocket() // drop any socket authed as a previous user
       router.push('/rooms')
     } catch (e) {
       setError(e instanceof ApiError ? e.message : '로그인에 실패했어요')
@@ -48,6 +51,8 @@ export function LoginClient() {
   const loginMock = (nickname: string) => {
     setToken(null) // mock mode — no token
     setMe(nickname)
+    setMyUserId(null)
+    disconnectSocket()
     router.push('/rooms')
   }
 

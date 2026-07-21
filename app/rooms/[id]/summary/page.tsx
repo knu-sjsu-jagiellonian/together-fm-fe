@@ -34,8 +34,9 @@ export default async function SummaryPage({ params }: SummaryPageProps) {
         <p className="mt-3 text-[12px] font-semibold text-muted-foreground">방이 종료되었어요</p>
         <h1 className="mt-1 text-[18px] font-extrabold text-foreground">{room.title}</h1>
         <div className="mt-2 flex flex-wrap justify-center gap-1.5">
-          <TagPill label={room.mood_tag} />
-          <TagPill label={room.situation_tag} />
+          {room.tags.map((t) => (
+            <TagPill key={t} label={t} />
+          ))}
         </div>
         <p className="mt-3 text-[11.5px] font-medium text-muted-foreground">
           {durationLabel} 동안 함께 들었어요

@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ListMusic, LogOut, Repeat } from 'lucide-react'
 import { Minimi } from '@/components/minimi'
+import { setToken } from '@/lib/api'
+import { disconnectSocket } from '@/lib/socket'
 import {
   ME_JOINED_LABEL,
   MOCK_SAVED_PLAYLISTS,
@@ -104,6 +106,8 @@ export function ProfileClient() {
         type="button"
         onClick={() => {
           clearMe()
+          setToken(null) // also drop the auth token so live mode turns off
+          disconnectSocket() // drop the authenticated socket
           router.push('/login')
         }}
         className="mt-2 inline-flex items-center justify-center gap-1.5 self-start rounded-full border-2 border-border py-2.5 px-5 text-[13px] font-bold text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"

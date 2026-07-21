@@ -1,16 +1,60 @@
-// Mock "current user" until login lands. `nickname` matches a participant/added_by
-// so host/adder permission checks work in mock mode. Swap for the auth'd user later.
+'use client'
 
-export const MOCK_ME = {
-  nickname: 'Mia',
-  joinedLabel: '2026.03 가입',
-} as const
+import { useEffect, useState } from 'react'
 
-// ── Session counters (kept in localStorage so the profile shows real activity) ──
+// Mock "current user". Login only stores the chosen nickname (no backend token),
+// so mock rooms keep working; the nickname drives host/adder permissions + profile.
+// Real login (backend seed accounts via POST /api/login) is a later step.
+
+const ME_KEY = 'tfm.me'
+export const DEFAULT_ME = 'Mia'
+export const ME_JOINED_LABEL = '2026.03 joined'
+
+export interface MockAccount {
+  nickname: string
+  note?: string
+}
+
+// Accounts aligned with the mock data (so host/adder demos work when you switch).
+export const MOCK_ACCOUNTS: MockAccount[] = [
+  { nickname: 'Mia', note: '늦은 밤 인디 감성 방장' },
+  { nickname: 'Noah', note: '늦은 밤 인디 감성 참여자' },
+  { nickname: 'Sofia', note: '늦은 밤 인디 감성 참여자' },
+  { nickname: 'Liam', note: 'Deep Focus 방장' },
+  { nickname: 'Aria', note: 'Gym Energy 방장' },
+]
+
+export function getMe(): string {
+  if (typeof window === 'undefined') return DEFAULT_ME
+  return localStorage.getItem(ME_KEY) ?? DEFAULT_ME
+}
+
+export function setMe(nickname: string) {
+  if (typeof window !== 'undefined') localStorage.setItem(ME_KEY, nickname)
+}
+
+export function clearMe() {
+  if (typeof window !== 'undefined') localStorage.removeItem(ME_KEY)
+}
+
+export function hasMe(): boolean {
+  return typeof window !== 'undefined' && localStorage.getItem(ME_KEY) !== null
+}
+
+/** Client hook that resolves the stored nickname after mount (SSR-safe). */
+export function useMe(): string {
+  const [me, setState] = useState(DEFAULT_ME)
+  useEffect(() => {
+    const t = setTimeout(() => setState(getMe()), 0)
+    return () => clearTimeout(t)
+  }, [])
+  return me
+}
+
+// ── Session counters (localStorage so the profile shows real activity) ──
 
 const REACTIONS_KEY = 'tfm.reactionsSent'
 const LISTENED_KEY = 'tfm.songsListened'
-// Seed values so a first-time profile isn't empty; real activity adds on top.
 const REACTIONS_SEED = 128
 const LISTENED_SEED = 342
 
@@ -35,7 +79,7 @@ export const bumpSongsListened = () => bump(LISTENED_KEY, LISTENED_SEED)
 export const getReactionsSent = () => readCount(REACTIONS_KEY, REACTIONS_SEED)
 export const getSongsListened = () => readCount(LISTENED_KEY, LISTENED_SEED)
 
-// A couple of saved playlists (mock — later these come from saved room recaps).
+// A couple of saved playlists (mock — later from saved room recaps).
 export interface SavedPlaylist {
   id: string
   title: string

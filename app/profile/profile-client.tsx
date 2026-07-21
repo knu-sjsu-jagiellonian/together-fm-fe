@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { ListMusic } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { ListMusic, LogOut, Repeat } from 'lucide-react'
 import { Minimi } from '@/components/minimi'
 import {
-  MOCK_ME,
+  ME_JOINED_LABEL,
   MOCK_SAVED_PLAYLISTS,
+  clearMe,
   getReactionsSent,
   getSongsListened,
+  useMe,
 } from '@/lib/me'
 
 function Stat({ value, label }: { value: string | number; label: string }) {
@@ -21,6 +25,8 @@ function Stat({ value, label }: { value: string | number; label: string }) {
 }
 
 export function ProfileClient() {
+  const router = useRouter()
+  const me = useMe()
   // Read localStorage-backed stats on the client only (avoids hydration mismatch).
   const [reactions, setReactions] = useState<number | null>(null)
   const [listened, setListened] = useState<number | null>(null)
@@ -40,11 +46,17 @@ export function ProfileClient() {
     <div className="flex flex-1 flex-col gap-6 px-6 pb-10 pt-6">
       {/* Profile header */}
       <section className="flex items-center gap-4">
-        <Minimi seed={MOCK_ME.nickname} size={56} name={MOCK_ME.nickname} />
-        <div className="min-w-0">
-          <p className="text-[20px] font-extrabold text-foreground">{MOCK_ME.nickname}</p>
-          <p className="mt-0.5 text-[12px] font-medium text-muted-foreground">{MOCK_ME.joinedLabel}</p>
+        <Minimi seed={me} size={56} name={me} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[20px] font-extrabold text-foreground">{me}</p>
+          <p className="mt-0.5 text-[12px] font-medium text-muted-foreground">{ME_JOINED_LABEL}</p>
         </div>
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-1 rounded-full border-2 border-border bg-white px-3 py-1.5 text-[11.5px] font-bold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+        >
+          <Repeat className="h-3.5 w-3.5" /> 계정 전환
+        </Link>
       </section>
 
       {/* Stats */}
@@ -87,6 +99,17 @@ export function ProfileClient() {
           </div>
         )}
       </section>
+
+      <button
+        type="button"
+        onClick={() => {
+          clearMe()
+          router.push('/login')
+        }}
+        className="mt-2 inline-flex items-center justify-center gap-1.5 self-start rounded-full border-2 border-border py-2.5 px-5 text-[13px] font-bold text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+      >
+        <LogOut className="h-4 w-4" /> 로그아웃
+      </button>
     </div>
   )
 }

@@ -11,7 +11,7 @@ import { TagPill } from '@/components/tag-pill'
 import { Vinyl } from '@/components/vinyl'
 import { Minimi } from '@/components/minimi'
 import { getToken } from '@/lib/api'
-import { MOCK_ME, bumpReactionsSent, bumpSongsListened } from '@/lib/me'
+import { useMe, bumpReactionsSent, bumpSongsListened } from '@/lib/me'
 import { getSocket, type TfmSocket } from '@/lib/socket'
 import { useClockOffset } from '@/hooks/use-clock-offset'
 import { useYouTubePlayer } from '@/hooks/use-youtube-player'
@@ -89,8 +89,8 @@ export function RoomClient({ room }: RoomClientProps) {
     membersRef.current = members
   }, [members])
 
-  // "Me" (mock until login). Host-only + adder-only permissions key off this.
-  const me = MOCK_ME.nickname
+  // "Me" (from mock login). Host-only + adder-only permissions key off this.
+  const me = useMe()
   const isHost = room.host === me
   const canRemove = (t: Track) => isHost || t.added_by === me
 

@@ -1,40 +1,65 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock, Search } from 'lucide-react'
-import type { FilterTag, RoomWithDetails } from '@/lib/types'
+import type { FilterTag } from '@/lib/types'
+import { api, getToken } from '@/lib/api'
+import { fromApiRoom, type RoomListItem } from '@/lib/rooms'
 import { TagPill } from '@/components/tag-pill'
 import { RoomCard } from '@/components/room-card'
 
 interface RoomsClientProps {
-  rooms: RoomWithDetails[]
+  /** Mock rooms rendered on the server; replaced by live data when logged in. */
+  initialRooms: RoomListItem[]
   filterTags: FilterTag[]
 }
 
-export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
+export function RoomsClient({ initialRooms, filterTags }: RoomsClientProps) {
   const router = useRouter()
+  const [rooms, setRooms] = useState<RoomListItem[]>(initialRooms)
+  const [loading, setLoading] = useState(false)
   const [activeFilter, setActiveFilter] = useState<FilterTag>('전체')
   const [query, setQuery] = useState('')
 
-  // Password gate for private rooms.
-  const [locked, setLocked] = useState<RoomWithDetails | null>(null)
+  // Password gate for private rooms (mock only — the backend lists public rooms).
+  const [locked, setLocked] = useState<RoomListItem | null>(null)
   const [pw, setPw] = useState('')
   const [pwError, setPwError] = useState(false)
 
+  // When logged in (token present) fetch the real room list.
+  useEffect(() => {
+    if (!getToken()) return
+    let cancelled = false
+    const load = async () => {
+      setLoading(true)
+      try {
+        const list = await api.rooms()
+        if (!cancelled) setRooms(list.map(fromApiRoom))
+      } catch {
+        /* keep whatever we have */
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const q = query.trim().toLowerCase()
   const filtered = rooms.filter((r) => {
-    const tags = [r.genre_tag, r.mood_tag, r.situation_tag]
-    const matchesFilter = activeFilter === '전체' || tags.includes(activeFilter)
+    const matchesFilter = activeFilter === '전체' || r.tags.includes(activeFilter)
     const matchesQuery =
       !q ||
       r.title.toLowerCase().includes(q) ||
-      tags.some((t) => t.toLowerCase().includes(q)) ||
-      (r.current_track?.title.toLowerCase().includes(q) ?? false)
+      r.tags.some((t) => t.toLowerCase().includes(q)) ||
+      (r.nowPlaying?.title.toLowerCase().includes(q) ?? false)
     return matchesFilter && matchesQuery
   })
 
-  const openGate = (room: RoomWithDetails) => {
+  const openGate = (room: RoomListItem) => {
     setLocked(room)
     setPw('')
     setPwError(false)
@@ -43,17 +68,13 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
   const submitGate = (e: React.FormEvent) => {
     e.preventDefault()
     if (!locked) return
-    // Mock check — the real password lives on the backend.
-    if (pw === (locked.password ?? '')) {
-      router.push(`/rooms/${locked.id}`)
-    } else {
-      setPwError(true)
-    }
+    if (pw === (locked.password ?? '')) router.push(`/rooms/${locked.id}`)
+    else setPwError(true)
   }
 
   return (
     <section className="pb-8">
-      {/* Search (title / tag / now-playing) */}
+      {/* Search */}
       <div className="mt-4 flex items-center gap-2.5 rounded-full border-2 border-border bg-white px-4 py-3">
         <Search className="h-[18px] w-[18px] flex-shrink-0 text-muted-foreground/70" />
         <input
@@ -72,27 +93,17 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
       </div>
 
       {/* Filter chips */}
-      <div
-        className="-mx-6 mb-5 mt-4 flex gap-2 overflow-x-auto px-6 pb-1 scrollbar-hide"
-        role="group"
-        aria-label="장르/무드/상황 태그 필터"
-      >
+      <div className="-mx-6 mb-5 mt-4 flex gap-2 overflow-x-auto px-6 pb-1 scrollbar-hide" role="group" aria-label="장르/무드/상황 태그 필터">
         {filterTags.map((tag) => (
-          <TagPill
-            key={tag}
-            label={tag}
-            active={activeFilter === tag}
-            onClick={() => setActiveFilter(tag)}
-            className="flex-shrink-0"
-          />
+          <TagPill key={tag} label={tag} active={activeFilter === tag} onClick={() => setActiveFilter(tag)} className="flex-shrink-0" />
         ))}
       </div>
 
-      {/* Section heading */}
       <h2 className="mb-3 text-[15px] font-bold text-foreground">지금 열려있는 방</h2>
 
-      {/* Room cards */}
-      {filtered.length > 0 ? (
+      {loading && rooms.length === 0 ? (
+        <p className="py-10 text-center text-[13px] text-muted-foreground">방 목록 불러오는 중…</p>
+      ) : filtered.length > 0 ? (
         <ul className="flex flex-col gap-3" role="list">
           {filtered.map((room) => (
             <li key={room.id}>
@@ -104,7 +115,7 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
         <div className="flex flex-col items-center gap-3 rounded-[18px] border-2 border-border bg-white p-10 text-center">
           <span className="text-3xl" aria-hidden="true">🎵</span>
           <p className="text-sm text-muted-foreground">
-            해당 태그의 방이 없어요.
+            {query || activeFilter !== '전체' ? '조건에 맞는 방이 없어요.' : '아직 열린 방이 없어요.'}
             <br />
             <span className="font-medium text-primary">직접 방을 만들어보세요!</span>
           </p>
@@ -120,11 +131,7 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
           aria-label="비공개 방 입장"
           onClick={() => setLocked(null)}
         >
-          <form
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={submitGate}
-            className="w-full rounded-[20px] border-2 border-border bg-white p-6"
-          >
+          <form onClick={(e) => e.stopPropagation()} onSubmit={submitGate} className="w-full rounded-[20px] border-2 border-border bg-white p-6">
             <div className="mb-3 flex items-center gap-2">
               <span className="grid h-8 w-8 place-items-center rounded-full bg-secondary">
                 <Lock className="h-4 w-4 text-primary" />
@@ -150,18 +157,10 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
             />
             {pwError && <p className="mt-1.5 text-[12px] font-semibold text-destructive">비밀번호가 올바르지 않아요</p>}
             <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setLocked(null)}
-                className="flex-1 rounded-full border-2 border-border py-2.5 text-[13px] font-bold text-muted-foreground hover:text-foreground"
-              >
+              <button type="button" onClick={() => setLocked(null)} className="flex-1 rounded-full border-2 border-border py-2.5 text-[13px] font-bold text-muted-foreground hover:text-foreground">
                 취소
               </button>
-              <button
-                type="submit"
-                disabled={pw.length === 0}
-                className="flex-1 rounded-full bg-holo py-2.5 text-[13px] font-extrabold text-[#2c2a35] disabled:cursor-not-allowed disabled:opacity-50"
-              >
+              <button type="submit" disabled={pw.length === 0} className="flex-1 rounded-full bg-holo py-2.5 text-[13px] font-extrabold text-[#2c2a35] disabled:cursor-not-allowed disabled:opacity-50">
                 입장하기
               </button>
             </div>

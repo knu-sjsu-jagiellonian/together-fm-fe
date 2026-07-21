@@ -1,6 +1,4 @@
-import { notFound } from 'next/navigation'
 import { getRoomById } from '@/lib/mock-data'
-import { AppHeader } from '@/components/app-header'
 import { RoomClient } from './room-client'
 
 interface RoomPageProps {
@@ -9,17 +7,12 @@ interface RoomPageProps {
 
 export default async function RoomPage({ params }: RoomPageProps) {
   const { id } = await params
+  // May be null for a real (backend) room — the socket snapshot fills it in.
   const room = await getRoomById(id)
-
-  if (!room) notFound()
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
-      <AppHeader
-        back={{ href: '/rooms', label: '방 목록' }}
-        title={room.title}
-      />
-      <RoomClient room={room} />
+      <RoomClient roomId={id} initialRoom={room} />
     </main>
   )
 }

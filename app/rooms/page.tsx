@@ -2,11 +2,13 @@ import Link from 'next/link'
 import { User } from 'lucide-react'
 import { getRooms } from '@/lib/mock-data'
 import { FILTER_TAGS } from '@/lib/types'
+import { fromMockRoom } from '@/lib/rooms'
 import { RoomsClient } from './rooms-client'
 import { BottomNav } from '@/components/bottom-nav'
 
 export default async function RoomsPage() {
   const rooms = await getRooms()
+  const initialRooms = rooms.map(fromMockRoom)
 
   // Rough "listening now" tally for the presence pill.
   const listeners = rooms.reduce((sum, r) => sum + r.participants.length, 0)
@@ -36,7 +38,7 @@ export default async function RoomsPage() {
         </div>
 
         {/* Search + filters + room list */}
-        <RoomsClient rooms={rooms} filterTags={FILTER_TAGS} />
+        <RoomsClient initialRooms={initialRooms} filterTags={FILTER_TAGS} />
       </main>
 
       <BottomNav />

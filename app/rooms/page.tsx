@@ -13,7 +13,7 @@ export default async function RoomsPage() {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <main className="flex-1 px-6 pt-12">
+      <main className="flex-1 px-6 pb-24 pt-12">
         {/* Title + profile access (top-right) */}
         <div className="flex items-start justify-between">
           <div>

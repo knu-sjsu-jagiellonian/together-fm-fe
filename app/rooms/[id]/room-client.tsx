@@ -11,6 +11,7 @@ import { TagPill } from '@/components/tag-pill'
 import { Vinyl } from '@/components/vinyl'
 import { Minimi } from '@/components/minimi'
 import { getToken } from '@/lib/api'
+import { MOCK_ME, bumpReactionsSent, bumpSongsListened } from '@/lib/me'
 import { getSocket, type TfmSocket } from '@/lib/socket'
 import { useClockOffset } from '@/hooks/use-clock-offset'
 import { useYouTubePlayer } from '@/hooks/use-youtube-player'
@@ -88,8 +89,24 @@ export function RoomClient({ room }: RoomClientProps) {
     membersRef.current = members
   }, [members])
 
-  const meIndex = members.length - 1
+  // "Me" (mock until login). Host-only + adder-only permissions key off this.
+  const me = MOCK_ME.nickname
+  const isHost = room.host === me
+  const canRemove = (t: Track) => isHost || t.added_by === me
+
+  const foundMe = members.findIndex((m) => m.name === me)
+  const meIndex = foundMe >= 0 ? foundMe : members.length - 1
   const positions = circlePositions(Math.max(members.length, 1))
+
+  // Count each song listened (mock activity for the profile).
+  const listenedRef = useRef<string | null>(null)
+  useEffect(() => {
+    const id = displayCurrent?.id
+    if (!live && localPlayer.isPlaying && id && listenedRef.current !== id) {
+      listenedRef.current = id
+      bumpSongsListened()
+    }
+  }, [displayCurrent?.id, localPlayer.isPlaying, live])
 
   function spawnBurst(emoji: string, idx: number) {
     if (idx < 0) return
@@ -182,7 +199,7 @@ export function RoomClient({ room }: RoomClientProps) {
           room_id: room.id,
           title: track.title,
           artist: track.artist,
-          added_by: '나',
+          added_by: me,
           position: prev.length,
           played_at: null,
           duration_sec: track.durationSec,
@@ -200,6 +217,7 @@ export function RoomClient({ room }: RoomClientProps) {
 
   const handleEmoji = (emoji: string) => {
     spawnBurst(emoji, meIndex) // beside me
+    bumpReactionsSent()
     if (live && socket) socket.emit('reaction:send', { emoji })
   }
 
@@ -296,11 +314,12 @@ export function RoomClient({ room }: RoomClientProps) {
         tracks={displayTracks}
         currentId={displayCurrent?.id}
         onRemove={handleRemove}
+        canRemove={canRemove}
         onAdd={handleAdd}
         onSelect={live ? undefined : localPlayer.playAt}
       />
 
-      {/* leave / end */}
+      {/* leave / end (end is host-only) */}
       <div className="flex gap-3 pt-1">
         <button
           type="button"
@@ -309,14 +328,19 @@ export function RoomClient({ room }: RoomClientProps) {
         >
           방 나가기
         </button>
-        <button
-          type="button"
-          onClick={() => router.push(`/rooms/${room.id}/summary`)}
-          className="flex-1 rounded-full border-2 border-destructive/40 py-2.5 text-center text-[13px] font-semibold text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
-        >
-          방 종료
-        </button>
+        {isHost && (
+          <button
+            type="button"
+            onClick={() => router.push(`/rooms/${room.id}/summary`)}
+            className="flex-1 rounded-full border-2 border-destructive/40 py-2.5 text-center text-[13px] font-semibold text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+          >
+            방 종료
+          </button>
+        )}
       </div>
+      {!isHost && (
+        <p className="text-center text-[10.5px] font-medium text-muted-foreground/70">방 종료는 방장만 할 수 있어요</p>
+      )}
     </div>
   )
 }

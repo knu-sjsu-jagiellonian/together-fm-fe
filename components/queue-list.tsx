@@ -14,6 +14,8 @@ interface QueueListProps {
   /** Id of the currently-playing track (highlighted). */
   currentId?: string | null
   onRemove?: (trackId: string) => void
+  /** Whether the current user may remove a given track (host or the adder). */
+  canRemove?: (track: Track) => boolean
   onAdd?: (track: SearchResult) => void
   /** Jump to a track by its index. */
   onSelect?: (index: number) => void
@@ -29,7 +31,7 @@ function Cover({ track }: { track: Track }) {
   )
 }
 
-export function QueueList({ tracks, currentId, onRemove, onAdd, onSelect, className }: QueueListProps) {
+export function QueueList({ tracks, currentId, onRemove, canRemove, onAdd, onSelect, className }: QueueListProps) {
   const [adding, setAdding] = useState(false)
   const addRef = useRef<HTMLDivElement>(null)
 
@@ -81,7 +83,7 @@ export function QueueList({ tracks, currentId, onRemove, onAdd, onSelect, classN
                     ))}
                   </span>
                 ) : (
-                  onRemove && (
+                  onRemove && (!canRemove || canRemove(track)) && (
                     <button
                       type="button"
                       onClick={(e) => {

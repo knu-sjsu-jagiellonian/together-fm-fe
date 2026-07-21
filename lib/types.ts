@@ -23,6 +23,7 @@ export interface Room {
   max_members: number
   is_public: boolean
   password?: string   // set for private rooms (mock; max 8 chars)
+  host?: string       // host nickname (only the host can end the room)
   created_at: string
   ended_at: string | null
 }

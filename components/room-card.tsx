@@ -56,8 +56,9 @@ export function RoomCard({ room, onLockedClick, className }: RoomCardProps) {
         <h3 className="truncate text-[15px] font-bold leading-snug text-foreground">{room.title}</h3>
 
         <div className="mt-1.5 flex flex-wrap gap-1">
-          <TagPill label={room.situation_tag} />
+          <TagPill label={room.genre_tag} />
           <TagPill label={room.mood_tag} />
+          <TagPill label={room.situation_tag} />
         </div>
 
         <p className="mt-1.5 text-[10.5px] font-medium text-muted-foreground">

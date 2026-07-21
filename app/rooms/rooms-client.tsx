@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Lock } from 'lucide-react'
+import { Lock, Search } from 'lucide-react'
 import type { FilterTag, RoomWithDetails } from '@/lib/types'
 import { TagPill } from '@/components/tag-pill'
 import { RoomCard } from '@/components/room-card'
@@ -15,20 +15,24 @@ interface RoomsClientProps {
 export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
   const router = useRouter()
   const [activeFilter, setActiveFilter] = useState<FilterTag>('전체')
+  const [query, setQuery] = useState('')
 
   // Password gate for private rooms.
   const [locked, setLocked] = useState<RoomWithDetails | null>(null)
   const [pw, setPw] = useState('')
   const [pwError, setPwError] = useState(false)
 
-  const filtered = activeFilter === '전체'
-    ? rooms
-    : rooms.filter(
-        (r) =>
-          r.genre_tag === activeFilter ||
-          r.mood_tag === activeFilter ||
-          r.situation_tag === activeFilter,
-      )
+  const q = query.trim().toLowerCase()
+  const filtered = rooms.filter((r) => {
+    const tags = [r.genre_tag, r.mood_tag, r.situation_tag]
+    const matchesFilter = activeFilter === '전체' || tags.includes(activeFilter)
+    const matchesQuery =
+      !q ||
+      r.title.toLowerCase().includes(q) ||
+      tags.some((t) => t.toLowerCase().includes(q)) ||
+      (r.current_track?.title.toLowerCase().includes(q) ?? false)
+    return matchesFilter && matchesQuery
+  })
 
   const openGate = (room: RoomWithDetails) => {
     setLocked(room)
@@ -49,9 +53,27 @@ export function RoomsClient({ rooms, filterTags }: RoomsClientProps) {
 
   return (
     <section className="pb-8">
+      {/* Search (title / tag / now-playing) */}
+      <div className="mt-4 flex items-center gap-2.5 rounded-full border-2 border-border bg-white px-4 py-3">
+        <Search className="h-[18px] w-[18px] flex-shrink-0 text-muted-foreground/70" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="방 제목, 태그로 검색"
+          className="flex-1 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
+          aria-label="방 검색"
+        />
+        {query && (
+          <button type="button" onClick={() => setQuery('')} className="text-xs text-muted-foreground hover:text-foreground" aria-label="검색어 지우기">
+            ✕
+          </button>
+        )}
+      </div>
+
       {/* Filter chips */}
       <div
-        className="-mx-6 mb-5 mt-5 flex gap-2 overflow-x-auto px-6 pb-1 scrollbar-hide"
+        className="-mx-6 mb-5 mt-4 flex gap-2 overflow-x-auto px-6 pb-1 scrollbar-hide"
         role="group"
         aria-label="장르/무드/상황 태그 필터"
       >

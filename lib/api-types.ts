@@ -2,6 +2,9 @@
  * Backend contract types — a verbatim copy of together-fm-be/shared/types.ts
  * (the single source of truth). Re-copy this file whenever the backend's
  * shared/types.ts changes. Do not hand-edit divergently.
+ *
+ * Note: as of this sync the backend's tags match the FE's lib/types.ts exactly
+ * (Korean genre/mood/situation labels), so no tag mapping is needed anymore.
  */
 
 // ---------------------------------------------------------------- 사용자
@@ -19,34 +22,53 @@ export interface LoginResponse {
 
 // ---------------------------------------------------------------- 태그
 
-export type TagId =
-  | 'study'
-  | 'travel'
-  | 'daily'
-  | 'party'
-  | 'workout'
-  | 'chill'
-  | 'night'
-  | 'drive';
+export type GenreTag =
+  | '팝'
+  | '인디'
+  | '힙합'
+  | 'R&B'
+  | '록'
+  | '일렉트로닉'
+  | '재즈'
+  | 'K-팝'
+  | '로파이'
+  | '라틴';
 
-export interface TagMeta {
-  id: TagId;
-  label: string;
-  emoji: string;
-}
+export type MoodTag =
+  | '잔잔한'
+  | '신나는'
+  | '집중'
+  | '파티'
+  | '감성적인'
+  | '몽환적인'
+  | '청량한'
+  | '나른한';
 
-export const TAGS: readonly TagMeta[] = [
-  { id: 'study', label: '공부', emoji: '📚' },
-  { id: 'travel', label: '여행', emoji: '✈️' },
-  { id: 'daily', label: '일상', emoji: '☕️' },
-  { id: 'party', label: '파티', emoji: '🎉' },
-  { id: 'workout', label: '운동', emoji: '💪' },
-  { id: 'chill', label: '휴식', emoji: '🛋️' },
-  { id: 'night', label: '새벽', emoji: '🌌' },
-  { id: 'drive', label: '드라이브', emoji: '🚗' },
+export type SituationTag =
+  | '공부'
+  | '운동'
+  | '여행'
+  | '일상'
+  | '드라이브'
+  | '카페'
+  | '취침'
+  | '출근';
+
+export type TagId = GenreTag | MoodTag | SituationTag;
+
+export const GENRE_TAGS: readonly GenreTag[] = [
+  '팝', '인디', '힙합', 'R&B', '록', '일렉트로닉', '재즈', 'K-팝', '로파이', '라틴',
 ] as const;
 
-export const TAG_IDS: readonly TagId[] = TAGS.map((t) => t.id);
+export const MOOD_TAGS: readonly MoodTag[] = [
+  '잔잔한', '신나는', '집중', '파티', '감성적인', '몽환적인', '청량한', '나른한',
+] as const;
+
+export const SITUATION_TAGS: readonly SituationTag[] = [
+  '공부', '운동', '여행', '일상', '드라이브', '카페', '취침', '출근',
+] as const;
+
+export const TAG_IDS: readonly TagId[] = [...GENRE_TAGS, ...MOOD_TAGS, ...SITUATION_TAGS];
 
 // ---------------------------------------------------------------- 트랙
 
@@ -72,13 +94,8 @@ export interface SearchResult {
 
 /**
  * 곡을 추가할 때 클라이언트가 보내는 입력.
- *
- * 평소에는 `videoId`만 보내면 되고, 서버가 YouTube에서 제목·재생시간을
- * 직접 조회해 채운다. 클라이언트가 보낸 재생시간을 신뢰하면 값이 틀렸을 때
- * 곡 전환 시점이 어긋나 방 전체의 싱크가 깨지기 때문이다.
- *
- * 나머지 필드는 `ALLOW_UNVERIFIED_TRACKS=true`인 개발 모드에서만 쓰인다
- * (API 키 없이 개발할 때). 운영에서는 무시된다.
+ * 평소에는 `videoId`만 보내면 되고, 서버가 YouTube에서 제목·재생시간을 채운다.
+ * 나머지 필드는 `ALLOW_UNVERIFIED_TRACKS=true` 개발 모드에서만 쓰인다.
  */
 export interface TrackInput {
   videoId: string;
@@ -100,10 +117,7 @@ export interface RoomMeta {
   createdAt: number;
 }
 
-/**
- * 재생 중인 곡. 재생 "위치"가 아니라 "언제 0초부터 시작했는지"를 담는다.
- * 위치는 각 클라이언트가 보정된 서버 시각으로 직접 계산한다.
- */
+/** 재생 중인 곡. 위치가 아니라 "언제 0초부터 시작했는지"를 담는다. */
 export interface NowPlaying {
   track: Track;
   startedAtServerMs: number;

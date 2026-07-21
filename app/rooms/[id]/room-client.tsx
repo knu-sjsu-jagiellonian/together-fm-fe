@@ -14,6 +14,7 @@ import { getToken } from '@/lib/api'
 import { getSocket, type TfmSocket } from '@/lib/socket'
 import { useClockOffset } from '@/hooks/use-clock-offset'
 import { useYouTubePlayer } from '@/hooks/use-youtube-player'
+import { useLocalPlayer } from '@/hooks/use-local-player'
 import type { Track as ApiTrack, Member, NowPlaying, SearchResult } from '@/lib/api-types'
 
 interface RoomClientProps {
@@ -49,8 +50,13 @@ function circlePositions(n: number, radius = 42) {
 export function RoomClient({ room }: RoomClientProps) {
   const router = useRouter()
 
+  // Live (socket) state.
   const [queue, setQueue] = useState<Track[]>(room.queue)
   const [current, setCurrent] = useState<Track | null>(room.current_track)
+  // Mock local playlist (current first, then upcoming) — driven by the local player.
+  const [playlist, setPlaylist] = useState<Track[]>(
+    room.current_track ? [room.current_track, ...room.queue] : [...room.queue],
+  )
   const [members, setMembers] = useState<MemberView[]>(
     room.participants.map((p) => ({ id: p.id, name: p.name, color: p.avatar_color })),
   )
@@ -68,6 +74,13 @@ export function RoomClient({ room }: RoomClientProps) {
   useEffect(() => {
     syncToRef.current = player.syncTo
   }, [player.syncTo])
+
+  // Local playlist player (mock mode: actually plays audio + next/prev).
+  const localPlayer = useLocalPlayer(playlist, !live)
+
+  // What to display: live socket state, or the local player's view.
+  const displayCurrent = live ? current : localPlayer.current
+  const displayQueue = live ? queue : playlist.slice(localPlayer.index + 1)
 
   const membersRef = useRef(members)
   useEffect(() => {
@@ -161,7 +174,7 @@ export function RoomClient({ room }: RoomClientProps) {
         if (!res.ok) setNotice(res.reason ?? '곡을 추가하지 못했어요')
       })
     } else {
-      setQueue((prev) => [
+      setPlaylist((prev) => [
         ...prev,
         {
           id: `t-${Date.now()}`,
@@ -179,7 +192,10 @@ export function RoomClient({ room }: RoomClientProps) {
     }
   }
 
-  const handleRemove = (trackId: string) => setQueue((prev) => prev.filter((t) => t.id !== trackId))
+  const handleRemove = (trackId: string) => {
+    if (live) setQueue((prev) => prev.filter((t) => t.id !== trackId))
+    else setPlaylist((prev) => prev.filter((t) => t.id !== trackId))
+  }
 
   const handleEmoji = (emoji: string) => {
     spawnBurst(emoji, meIndex) // beside me
@@ -194,6 +210,7 @@ export function RoomClient({ room }: RoomClientProps) {
   return (
     <div className="flex flex-1 flex-col gap-5 px-6 pb-8 pt-4">
       {live && <div id={player.containerId} className="pointer-events-none fixed h-px w-px opacity-0" aria-hidden="true" />}
+      {!live && <div id={localPlayer.containerId} className="pointer-events-none fixed h-px w-px opacity-0" aria-hidden="true" />}
 
       {/* Audio-unlock overlay (autoplay policy) */}
       {live && current && !audioUnlocked && (
@@ -228,7 +245,7 @@ export function RoomClient({ room }: RoomClientProps) {
       {/* central vinyl with participants around it (mock 최종3) */}
       <section className="relative mx-auto aspect-square w-full max-w-[300px]">
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <Vinyl size={96} hub="#b8a0e8" holoRing spinning />
+          <Vinyl size={96} hub="#b8a0e8" holoRing spinning={live || localPlayer.isPlaying} />
         </div>
 
         {members.map((m, i) => {
@@ -257,14 +274,24 @@ export function RoomClient({ room }: RoomClientProps) {
         })}
       </section>
 
-      {/* now playing */}
-      <NowPlayingCard track={current} />
+      {/* now playing (mock: real local playback + next/prev) */}
+      <NowPlayingCard
+        track={displayCurrent}
+        isPlaying={live ? false : localPlayer.isPlaying}
+        progressSec={live ? 0 : localPlayer.progress}
+        durationSec={live ? displayCurrent?.duration_sec : localPlayer.duration}
+        onToggle={live ? undefined : localPlayer.toggle}
+        onNext={live ? undefined : localPlayer.next}
+        onPrev={live ? undefined : localPlayer.prev}
+        hasNext={live ? false : localPlayer.hasNext}
+        hasPrev={live ? false : localPlayer.hasPrev}
+      />
 
       {/* reactions — right below the player */}
       <ReactionBar onEmoji={handleEmoji} />
 
       {/* full playlist (current + queue, scrolls when long) */}
-      <QueueList current={current} queue={queue} onRemove={handleRemove} onAdd={handleAdd} />
+      <QueueList current={displayCurrent} queue={displayQueue} onRemove={handleRemove} onAdd={handleAdd} />
 
       {/* leave / end */}
       <div className="flex gap-3 pt-1">

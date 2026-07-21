@@ -3,46 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MutableRefObject } from 'react'
 import type { NowPlaying } from '@/lib/api-types'
+import { loadIframeApi, type YTPlayer } from '@/lib/youtube-iframe'
 
-// Minimal YT IFrame API typings (avoids the @types/youtube dependency).
-interface YTPlayer {
-  loadVideoById(opts: { videoId: string; startSeconds?: number }): void
-  playVideo(): void
-  stopVideo(): void
-  seekTo(seconds: number, allowSeekAhead: boolean): void
-  getCurrentTime(): number
-  getPlayerState(): number
-}
-interface YTNamespace {
-  Player: new (el: string | HTMLElement, cfg: unknown) => YTPlayer
-  PlayerState: { PLAYING: number }
-}
-declare global {
-  interface Window {
-    YT?: YTNamespace
-    onYouTubeIframeAPIReady?: () => void
-  }
-}
-
-const IFRAME_API_SRC = 'https://www.youtube.com/iframe_api'
 const CONTAINER_ID = 'tfm-yt-player'
-
-/** Load the IFrame API script exactly once and resolve when `window.YT` is ready. */
-function loadIframeApi(): Promise<YTNamespace> {
-  return new Promise((resolve) => {
-    if (window.YT?.Player) return resolve(window.YT)
-    const prev = window.onYouTubeIframeAPIReady
-    window.onYouTubeIframeAPIReady = () => {
-      prev?.()
-      resolve(window.YT!)
-    }
-    if (!document.querySelector(`script[src="${IFRAME_API_SRC}"]`)) {
-      const s = document.createElement('script')
-      s.src = IFRAME_API_SRC
-      document.head.appendChild(s)
-    }
-  })
-}
 
 /**
  * Hidden 1px YouTube player that stays in sync with the server clock.

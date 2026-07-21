@@ -47,9 +47,7 @@ export function QueueList({ queue, current, onRemove, onAdd, className }: QueueL
         <ul className="max-h-[300px] overflow-y-auto" role="list">
           {current && (
             <li className="flex items-center gap-3 border-b border-border bg-secondary/30 px-3 py-2.5">
-              <span className="w-8 flex-shrink-0 text-center text-[8.5px] font-extrabold uppercase tracking-tight text-primary">
-                재생중
-              </span>
+              <span className="w-8 flex-shrink-0 text-center text-[11px] font-extrabold text-primary">1</span>
               <Cover track={current} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-bold text-foreground">{current.title}</p>
@@ -69,7 +67,9 @@ export function QueueList({ queue, current, onRemove, onAdd, className }: QueueL
 
           {queue.map((track, idx) => (
             <li key={track.id} className="group flex items-center gap-3 border-b border-border px-3 py-2.5 last:border-b-0">
-              <span className="w-8 flex-shrink-0 text-center text-[11px] font-extrabold text-muted-foreground">{idx + 1}</span>
+              <span className="w-8 flex-shrink-0 text-center text-[11px] font-extrabold text-muted-foreground">
+                {(current ? 2 : 1) + idx}
+              </span>
               <Cover track={track} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-bold text-foreground">{track.title}</p>
@@ -103,6 +103,7 @@ export function QueueList({ queue, current, onRemove, onAdd, className }: QueueL
           {adding ? (
             <div>
               <TrackSearch
+                inline
                 placeholder="유튜브에서 곡 검색"
                 onAdd={(t) => {
                   onAdd(t)

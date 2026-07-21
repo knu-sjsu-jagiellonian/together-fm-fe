@@ -10,6 +10,9 @@ import type { SearchResult } from '@/lib/api-types'
 interface TrackSearchProps {
   onAdd?: (track: SearchResult) => void
   placeholder?: string
+  /** Render results in-flow (pushes content down) instead of an absolute overlay,
+   *  so a search near the page bottom doesn't spill outside the container. */
+  inline?: boolean
   className?: string
 }
 
@@ -17,7 +20,7 @@ interface TrackSearchProps {
  * Backend-proxied YouTube search box. Searches on Enter (or the search button),
  * not per keystroke, then lets you pick a result to add.
  */
-export function TrackSearch({ onAdd, placeholder = '노래 제목·아티스트 입력 후 Enter', className }: TrackSearchProps) {
+export function TrackSearch({ onAdd, placeholder = '노래 제목·아티스트 입력 후 Enter', inline = false, className }: TrackSearchProps) {
   const { results, loading, error, searched, search, reset } = useTrackSearch()
   const [q, setQ] = useState('')
   const [open, setOpen] = useState(false)
@@ -84,7 +87,10 @@ export function TrackSearch({ onAdd, placeholder = '노래 제목·아티스트 
       {open && (loading || error || results.length > 0 || searched) && (
         <div
           id="track-search-listbox"
-          className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[14px] border-2 border-border bg-white shadow-[0_10px_28px_rgba(120,100,160,0.16)]"
+          className={cn(
+            'mt-2 overflow-hidden rounded-[14px] border-2 border-border bg-white shadow-[0_10px_28px_rgba(120,100,160,0.16)]',
+            inline ? 'relative' : 'absolute left-0 right-0 top-full z-50',
+          )}
           role="listbox"
           aria-label="검색 결과"
         >

@@ -30,11 +30,18 @@ export const MOCK_PARTICIPANTS: Record<string, Participant[]> = {
 export const MOCK_TRACKS: Record<string, Track[]> = {
   // Real, well-known YouTube ids so album covers render and the "save playlist"
   // export actually opens a working YouTube playlist.
+  // ~10 real, well-known songs (real YouTube ids so they play + show covers).
   'room-1': [
     { id: 't1', room_id: 'room-1', title: 'Take On Me', artist: 'a-ha', added_by: 'Mia', position: 0, played_at: '2024-01-15T14:10:00Z', duration_sec: 225, video_id: 'djV11Xbc914' },
-    { id: 't2', room_id: 'room-1', title: 'As It Was', artist: 'Harry Styles', added_by: 'Noah', position: 1, played_at: null, duration_sec: 167, video_id: 'H5v3kku4y6Q' },
-    { id: 't3', room_id: 'room-1', title: 'Hello', artist: 'Adele', added_by: 'Sofia', position: 2, played_at: null, duration_sec: 295, video_id: 'YQHsXMglC9A' },
-    { id: 't4', room_id: 'room-1', title: 'Roar', artist: 'Katy Perry', added_by: 'Mia', position: 3, played_at: null, duration_sec: 224, video_id: 'CevxZvSJLk8' },
+    { id: 't2', room_id: 'room-1', title: 'Blinding Lights', artist: 'The Weeknd', added_by: 'Noah', position: 1, played_at: null, duration_sec: 200, video_id: '4NRXx6U8ABQ' },
+    { id: 't3', room_id: 'room-1', title: 'As It Was', artist: 'Harry Styles', added_by: 'Sofia', position: 2, played_at: null, duration_sec: 167, video_id: 'H5v3kku4y6Q' },
+    { id: 't4', room_id: 'room-1', title: 'Uptown Funk', artist: 'Mark Ronson ft. Bruno Mars', added_by: 'Mia', position: 3, played_at: null, duration_sec: 270, video_id: 'OPf0YbXqDm0' },
+    { id: 't5', room_id: 'room-1', title: 'Shape of You', artist: 'Ed Sheeran', added_by: 'Noah', position: 4, played_at: null, duration_sec: 234, video_id: 'JGwWNGJdvx8' },
+    { id: 't6', room_id: 'room-1', title: 'Hello', artist: 'Adele', added_by: 'Sofia', position: 5, played_at: null, duration_sec: 295, video_id: 'YQHsXMglC9A' },
+    { id: 't7', room_id: 'room-1', title: 'See You Again', artist: 'Wiz Khalifa ft. Charlie Puth', added_by: 'Mia', position: 6, played_at: null, duration_sec: 230, video_id: 'RgKAFK5djSk' },
+    { id: 't8', room_id: 'room-1', title: 'Despacito', artist: 'Luis Fonsi ft. Daddy Yankee', added_by: 'Noah', position: 7, played_at: null, duration_sec: 281, video_id: 'kJQP7kiw5Fk' },
+    { id: 't9', room_id: 'room-1', title: 'Roar', artist: 'Katy Perry', added_by: 'Sofia', position: 8, played_at: null, duration_sec: 224, video_id: 'CevxZvSJLk8' },
+    { id: 't10', room_id: 'room-1', title: 'Bohemian Rhapsody', artist: 'Queen', added_by: 'Mia', position: 9, played_at: null, duration_sec: 355, video_id: 'fJ9rUzIMcZQ' },
   ],
   'room-2': [
     { id: 't5', room_id: 'room-2', title: 'Uptown Funk', artist: 'Mark Ronson ft. Bruno Mars', added_by: 'Liam', position: 0, played_at: '2024-01-15T13:05:00Z', duration_sec: 270, video_id: 'OPf0YbXqDm0' },

@@ -80,7 +80,8 @@ export function RoomClient({ room }: RoomClientProps) {
 
   // What to display: live socket state, or the local player's view.
   const displayCurrent = live ? current : localPlayer.current
-  const displayQueue = live ? queue : playlist.slice(localPlayer.index + 1)
+  // Full ordered playlist (numbers stay fixed; the playing track is highlighted).
+  const displayTracks = live ? (current ? [current, ...queue] : queue) : playlist
 
   const membersRef = useRef(members)
   useEffect(() => {
@@ -290,8 +291,14 @@ export function RoomClient({ room }: RoomClientProps) {
       {/* reactions — right below the player */}
       <ReactionBar onEmoji={handleEmoji} />
 
-      {/* full playlist (current + queue, scrolls when long) */}
-      <QueueList current={displayCurrent} queue={displayQueue} onRemove={handleRemove} onAdd={handleAdd} />
+      {/* full playlist — fixed numbering, current highlighted (scrolls when long) */}
+      <QueueList
+        tracks={displayTracks}
+        currentId={displayCurrent?.id}
+        onRemove={handleRemove}
+        onAdd={handleAdd}
+        onSelect={live ? undefined : localPlayer.playAt}
+      />
 
       {/* leave / end */}
       <div className="flex gap-3 pt-1">

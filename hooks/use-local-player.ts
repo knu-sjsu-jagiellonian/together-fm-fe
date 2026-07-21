@@ -105,6 +105,18 @@ export function useLocalPlayer(tracks: Track[], enabled = true) {
     else play()
   }, [isPlaying, play, pause])
 
+  const playAt = useCallback((i: number) => {
+    startedRef.current = true
+    setIsPlaying(true)
+    setIndex((cur) => {
+      if (cur === i) {
+        playerRef.current?.playVideo() // clicking the current row resumes it
+        return cur
+      }
+      return i // effect loads + autoplays the new index
+    })
+  }, [])
+
   const next = useCallback(() => {
     setIndex((i) => Math.min(tracksRef.current.length - 1, i + 1))
   }, [])
@@ -132,6 +144,7 @@ export function useLocalPlayer(tracks: Track[], enabled = true) {
     toggle,
     next,
     prev,
+    playAt,
     hasNext: safeIndex < tracks.length - 1,
     hasPrev: safeIndex > 0,
   }

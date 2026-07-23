@@ -18,6 +18,8 @@ export function useLocalPlayer(tracks: Track[], enabled = true) {
 
   const playerRef = useRef<YTPlayer | null>(null)
   const startedRef = useRef(false)
+  // Set when play() is called before the player's onReady fired; onReady honors it.
+  const pendingPlayRef = useRef(false)
   const tracksRef = useRef(tracks)
   const indexRef = useRef(index)
   const nextRef = useRef<() => void>(() => {})
@@ -47,7 +49,14 @@ export function useLocalPlayer(tracks: Track[], enabled = true) {
           onReady: () => {
             setReady(true)
             const t = tracksRef.current[indexRef.current]
-            if (t?.video_id) playerRef.current?.cueVideoById({ videoId: t.video_id })
+            if (!t?.video_id) return
+            // If the user already tapped play before the API was ready, start now.
+            if (pendingPlayRef.current) {
+              pendingPlayRef.current = false
+              playerRef.current?.loadVideoById({ videoId: t.video_id })
+            } else {
+              playerRef.current?.cueVideoById({ videoId: t.video_id })
+            }
           },
           onStateChange: (e: { data: number }) => {
             const S = window.YT?.PlayerState
@@ -88,7 +97,14 @@ export function useLocalPlayer(tracks: Track[], enabled = true) {
 
   const play = useCallback(() => {
     const p = playerRef.current
-    if (!p) return
+    // The YT.Player object exists before its API methods are attached (onReady).
+    // If we're tapped that early, remember it and let onReady start playback.
+    if (!p || typeof p.loadVideoById !== 'function') {
+      startedRef.current = true
+      pendingPlayRef.current = true
+      setIsPlaying(true)
+      return
+    }
     const t = tracksRef.current[indexRef.current]
     if (!startedRef.current) {
       startedRef.current = true

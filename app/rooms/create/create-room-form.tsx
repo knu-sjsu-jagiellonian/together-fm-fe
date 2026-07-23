@@ -18,10 +18,11 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-full px-4 py-1.5 text-[12.5px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
+        // Same border width + font weight in both states so the chip keeps its size when toggled.
+        'rounded-full border-2 px-4 py-1.5 text-[12.5px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
         active
-          ? 'bg-holo font-extrabold text-[#2c2a35]'
-          : 'border-2 border-border bg-white text-muted-foreground hover:border-primary/40',
+          ? 'border-transparent bg-holo text-[#2c2a35]'
+          : 'border-border bg-white text-muted-foreground hover:border-primary/40',
       )}
     >
       {label}
@@ -115,7 +116,7 @@ export function CreateRoomForm() {
 
       {/* genre (multi) */}
       <div>
-        <FieldLabel hint={genres.length ? `${genres.length}개 선택됨` : undefined}>장르 (중복 선택)</FieldLabel>
+        <FieldLabel hint={genres.length ? `${genres.length}개 선택됨` : undefined}>장르</FieldLabel>
         <div className="flex flex-wrap gap-2" role="group" aria-label="장르 선택">
           {GENRE_TAGS.map((tag) => (
             <Chip key={tag} label={tag} active={genres.includes(tag)} onClick={() => setGenres((g) => toggle(g, tag))} />
@@ -125,7 +126,7 @@ export function CreateRoomForm() {
 
       {/* mood (multi) */}
       <div>
-        <FieldLabel hint={moods.length ? `${moods.length}개 선택됨` : undefined}>분위기 (중복 선택)</FieldLabel>
+        <FieldLabel hint={moods.length ? `${moods.length}개 선택됨` : undefined}>분위기</FieldLabel>
         <div className="flex flex-wrap gap-2" role="group" aria-label="분위기 선택">
           {MOOD_TAGS.map((tag) => (
             <Chip key={tag} label={tag} active={moods.includes(tag)} onClick={() => setMoods((m) => toggle(m, tag))} />
@@ -135,7 +136,7 @@ export function CreateRoomForm() {
 
       {/* situation (multi) */}
       <div>
-        <FieldLabel hint={situations.length ? `${situations.length}개 선택됨` : undefined}>상황 (중복 선택)</FieldLabel>
+        <FieldLabel hint={situations.length ? `${situations.length}개 선택됨` : undefined}>상황</FieldLabel>
         <div className="flex flex-wrap gap-2" role="group" aria-label="상황 선택">
           {SITUATION_TAGS.map((tag) => (
             <Chip key={tag} label={tag} active={situations.includes(tag)} onClick={() => setSituations((s) => toggle(s, tag))} />

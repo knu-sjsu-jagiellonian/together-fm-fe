@@ -21,6 +21,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 export function SummaryView({ roomId }: { roomId: string }) {
   const [data, setData] = useState<SummarySnapshot | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -109,7 +110,7 @@ export function SummaryView({ roomId }: { roomId: string }) {
 
       <h2 className="mb-2.5 mt-6 text-[14.5px] font-extrabold text-foreground">플레이리스트</h2>
       <ol className="flex flex-col rounded-[16px] border-2 border-border bg-white px-4 py-2" role="list">
-        {data.tracks.slice(0, 5).map((track, idx) => (
+        {(showAll ? data.tracks : data.tracks.slice(0, 5)).map((track, idx) => (
           <li key={track.id} className="flex items-center gap-3 py-2">
             <span className="w-4 text-[12px] font-extrabold text-primary">{idx + 1}</span>
             <p className="min-w-0 flex-1 truncate text-[12px] font-bold text-foreground">
@@ -122,7 +123,15 @@ export function SummaryView({ roomId }: { roomId: string }) {
           <li className="py-3 text-center text-[11px] text-muted-foreground">재생된 곡이 없어요</li>
         )}
         {data.tracks.length > 5 && (
-          <li className="py-2 text-center text-[11px] font-bold text-muted-foreground">외 {data.tracks.length - 5}곡 더보기 ⌄</li>
+          <li>
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="w-full py-2 text-center text-[11px] font-bold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {showAll ? '접기 ⌃' : `외 ${data.tracks.length - 5}곡 더보기 ⌄`}
+            </button>
+          </li>
         )}
       </ol>
 

@@ -127,14 +127,12 @@ export function RoomsClient({ initialRooms }: RoomsClientProps) {
           )}
         </button>
 
-        {selected.length > 0 ? (
+        {selected.length > 0 && (
           <div className="flex flex-1 gap-2 overflow-x-auto scrollbar-hide">
             {selected.map((t) => (
               <TagPill key={t} label={t} active onClick={() => toggleTag(t)} className="flex-shrink-0" />
             ))}
           </div>
-        ) : (
-          <span className="text-[12px] font-medium text-muted-foreground/70">장르·분위기·상황</span>
         )}
       </div>
 

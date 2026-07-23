@@ -86,6 +86,8 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
   const [bursts, setBursts] = useState<Burst[]>([])
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  // Shown to a non-host when the host closes the room: offer to save before leaving.
+  const [closedPrompt, setClosedPrompt] = useState(false)
   const burstId = useRef(0)
   const reactionCountRef = useRef(0)
   // Set when *this* client (the host) ends the room, so its own room:closed
@@ -185,10 +187,10 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
       spawnBurst(emoji, idx >= 0 ? idx : membersRef.current.length - 1)
     }
     const onClosed = () => {
-      // The host who just ended is already navigating to the recap — don't redirect it.
+      // The host who just ended is already navigating to the recap — don't prompt it.
       if (endingRef.current) return
-      toast('방이 종료되었어요')
-      setTimeout(() => router.push('/rooms'), 1200)
+      // Others get a prompt: the room ended, offer to save the playlist before leaving.
+      setClosedPrompt(true)
     }
 
     s.on('track:start', onTrack)
@@ -322,7 +324,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
 
   return (
     <>
-      <AppHeader back={{ href: '/rooms', label: '홈' }} title={title} />
+      <AppHeader title={title} />
 
       <div className="flex flex-1 flex-col gap-5 px-6 pb-8 pt-4">
         {/* Audio-unlock overlay (autoplay policy) */}
@@ -352,7 +354,11 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
           >
             <div onClick={(e) => e.stopPropagation()} className="w-full rounded-[20px] border-2 border-border bg-white p-6 text-center">
               <p className="text-[15px] font-extrabold text-foreground">방을 종료할까요?</p>
-              <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">종료하면 지금까지 재생한 곡 요약을 볼 수 있어요.</p>
+              <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">
+                방장이 방을 종료하면 함께 듣던 사람들도 모두 방에서 나가게 돼요.
+                <br />
+                종료 후에는 지금까지 재생한 곡 요약을 볼 수 있어요.
+              </p>
               <div className="mt-5 flex gap-2">
                 <button
                   type="button"
@@ -414,15 +420,65 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
           </div>
         )}
 
-        {/* tags + presence */}
-        <div className="flex flex-wrap items-center gap-2">
-          {tags.map((t) => (
-            <TagPill key={t} label={t} />
-          ))}
-          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border-2 border-transparent bg-white px-3 py-1 holo-ring">
-            <span className="h-2 w-2 rounded-full" style={{ background: '#b8a0e8' }} />
-            <span className="text-[10px] font-bold text-muted-foreground">{members.length}명 함께 듣는 중</span>
-          </span>
+        {/* Room closed by the host: offer to save the playlist before leaving */}
+        {closedPrompt && (
+          <div
+            className="fixed inset-0 z-50 mx-auto flex max-w-[440px] items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label="방 종료"
+          >
+            <div className="w-full rounded-[20px] border-2 border-border bg-white p-6 text-center">
+              <p className="text-[15px] font-extrabold text-foreground">방이 종료되었어요</p>
+              <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">
+                방장이 방을 종료했어요.{displayTracks.length > 0 ? ' 지금까지의 곡 목록을 저장할까요?' : ''}
+              </p>
+              <div className="mt-5 flex flex-col gap-2">
+                {displayTracks.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClosedPrompt(false)
+                      savePlaylistToProfile()
+                      toast('플레이리스트를 저장했어요', 'success')
+                      router.push('/rooms')
+                    }}
+                    className="w-full rounded-full bg-holo py-2.5 text-[13px] font-extrabold text-[#2c2a35]"
+                  >
+                    저장하고 나가기
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClosedPrompt(false)
+                    router.push('/rooms')
+                  }}
+                  className="w-full rounded-full border-2 border-border py-2.5 text-[13px] font-bold text-muted-foreground hover:text-foreground"
+                >
+                  {displayTracks.length > 0 ? '그냥 나가기' : '나가기'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* tags + presence + host */}
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {tags.map((t) => (
+              <TagPill key={t} label={t} />
+            ))}
+            <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border-2 border-transparent bg-white px-3 py-1 holo-ring">
+              <span className="h-2 w-2 rounded-full" style={{ background: '#b8a0e8' }} />
+              <span className="text-[10px] font-bold text-muted-foreground">{members.length}명 함께 듣는 중</span>
+            </span>
+          </div>
+          {hostNickname && (
+            <p className="text-[11px] font-semibold text-muted-foreground">
+              <span aria-hidden="true">👑</span> 방장 <span className="font-bold text-foreground">{hostNickname}</span>
+            </p>
+          )}
         </div>
 
         {/* central vinyl with participants around it */}
@@ -435,6 +491,11 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
             const pos = positions[i]
             return (
               <div key={m.id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
+                {m.name === hostNickname && (
+                  <span className="pointer-events-none absolute -top-3 left-1/2 z-10 -translate-x-1/2 select-none text-[13px]" aria-label="방장" title="방장">
+                    👑
+                  </span>
+                )}
                 <Minimi seed={m.id} clothes={m.color} isMe={i === meIndex} size={30} name={m.name} />
                 {bursts
                   .filter((b) => b.idx === i)
@@ -470,7 +531,9 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
           onRemove={handleRemove}
           canRemove={canRemove}
           onAdd={handleAdd}
-          onSelect={live ? undefined : localPlayer.playAt}
+          // Radio-style: the current track auto-advances; tapping a track never jumps.
+          // Played tracks stay in the list as history only.
+          onSelect={undefined}
         />
 
         {/* Leave / end. The host leaving closes the room for everyone, so the host
@@ -494,9 +557,6 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
             </button>
           )}
         </div>
-        <p className="text-center text-[10.5px] font-medium text-muted-foreground/70">
-          {isHost ? '방장이 나가면 방이 종료돼요' : '방장이 방을 종료하면 함께 종료돼요'}
-        </p>
       </div>
     </>
   )

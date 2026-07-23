@@ -18,7 +18,7 @@ export function AppHeader({ back, title }: AppHeaderProps) {
           >
             <span className="text-xl leading-none">←</span>
           </Link>
-        ) : (
+        ) : title ? null : (
           <Link href="/rooms" className="group flex items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60" aria-label="Together FM 홈으로">
             <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-primary">
               <Radio className="h-3.5 w-3.5 text-white" />

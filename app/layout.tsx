@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Space_Grotesk } from 'next/font/google'
 import './globals.css'
+import { ToastProvider } from '@/components/toast'
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -27,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${spaceGrotesk.variable} bg-background`}>
       <body className="font-sans antialiased min-h-screen">
-        <div className="phone-shell flex flex-col">{children}</div>
+        <ToastProvider>
+          <div className="phone-shell flex flex-col">{children}</div>
+        </ToastProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

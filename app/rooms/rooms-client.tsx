@@ -8,6 +8,7 @@ import { api, getToken } from '@/lib/api'
 import { fromApiRoom, type RoomListItem } from '@/lib/rooms'
 import { TagPill } from '@/components/tag-pill'
 import { RoomCard } from '@/components/room-card'
+import { useToast } from '@/components/toast'
 
 interface RoomsClientProps {
   /** Mock rooms rendered on the server; replaced by live data when logged in. */
@@ -17,6 +18,7 @@ interface RoomsClientProps {
 
 export function RoomsClient({ initialRooms, filterTags }: RoomsClientProps) {
   const router = useRouter()
+  const toast = useToast()
   const [rooms, setRooms] = useState<RoomListItem[]>(initialRooms)
   const [loading, setLoading] = useState(false)
   const [activeFilter, setActiveFilter] = useState<FilterTag>('전체')
@@ -35,7 +37,9 @@ export function RoomsClient({ initialRooms, filterTags }: RoomsClientProps) {
       setLoading(true)
       try {
         const list = await api.rooms()
-        if (!cancelled) setRooms([...initialRooms, ...list.map(fromApiRoom)])
+        // Hide empty rooms (they are in the close-grace window and about to disappear).
+        const live = list.map(fromApiRoom).filter((r) => r.memberCount > 0)
+        if (!cancelled) setRooms([...initialRooms, ...live])
       } catch {
         /* keep the mock rooms */
       } finally {
@@ -68,8 +72,12 @@ export function RoomsClient({ initialRooms, filterTags }: RoomsClientProps) {
   const submitGate = (e: React.FormEvent) => {
     e.preventDefault()
     if (!locked) return
-    if (pw === (locked.password ?? '')) router.push(`/rooms/${locked.id}`)
-    else setPwError(true)
+    if (pw === (locked.password ?? '')) {
+      router.push(`/rooms/${locked.id}`)
+    } else {
+      setPwError(true)
+      toast('비밀번호가 올바르지 않아요', 'error')
+    }
   }
 
   return (
@@ -102,7 +110,19 @@ export function RoomsClient({ initialRooms, filterTags }: RoomsClientProps) {
       <h2 className="mb-3 text-[15px] font-bold text-foreground">지금 열려있는 방</h2>
 
       {loading && rooms.length === 0 ? (
-        <p className="py-10 text-center text-[13px] text-muted-foreground">방 목록 불러오는 중…</p>
+        <ul className="flex flex-col gap-3" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <li key={i} className="flex gap-4 rounded-[18px] border-2 border-border bg-white p-4 pl-5">
+              <span className="h-[86px] w-[86px] flex-shrink-0 animate-pulse rounded-full bg-secondary" />
+              <div className="flex-1 space-y-2 py-1">
+                <span className="block h-3 w-16 animate-pulse rounded bg-secondary" />
+                <span className="block h-4 w-2/3 animate-pulse rounded bg-secondary" />
+                <span className="block h-3 w-24 animate-pulse rounded bg-secondary" />
+                <span className="block h-3 w-1/2 animate-pulse rounded bg-secondary" />
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : filtered.length > 0 ? (
         <ul className="flex flex-col gap-3" role="list">
           {filtered.map((room) => (

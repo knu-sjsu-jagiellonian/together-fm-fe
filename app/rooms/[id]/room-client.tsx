@@ -11,7 +11,9 @@ import { ReactionBar } from '@/components/reaction-bar'
 import { TagPill } from '@/components/tag-pill'
 import { Vinyl } from '@/components/vinyl'
 import { Minimi } from '@/components/minimi'
+import { useToast } from '@/components/toast'
 import { getToken } from '@/lib/api'
+import { saveSummary } from '@/lib/summary'
 import { useMe, useMyUserId, bumpReactionsSent, bumpSongsListened } from '@/lib/me'
 import { getSocket, type TfmSocket } from '@/lib/socket'
 import { useClockOffset } from '@/hooks/use-clock-offset'
@@ -80,9 +82,11 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
   const [members, setMembers] = useState<MemberView[]>(
     room?.participants.map((p) => ({ id: p.id, userId: p.id, name: p.name, color: p.avatar_color })) ?? [],
   )
-  const [notice, setNotice] = useState<string | null>(null)
   const [bursts, setBursts] = useState<Burst[]>([])
+  const [confirmEnd, setConfirmEnd] = useState(false)
   const burstId = useRef(0)
+  const reactionCountRef = useRef(0)
+  const toast = useToast()
 
   const [live, setLive] = useState(false)
   const [socket, setSocket] = useState<TfmSocket | null>(null)
@@ -171,11 +175,12 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
     const onMembers = (ms: Member[]) =>
       setMembers(ms.map((m) => ({ id: m.id, userId: m.userId, name: m.nickname, color: colorFor(m.nickname) })))
     const onReaction = ({ emoji, nickname }: { emoji: string; nickname: string }) => {
+      reactionCountRef.current += 1
       const idx = membersRef.current.findIndex((m) => m.name === nickname)
       spawnBurst(emoji, idx >= 0 ? idx : membersRef.current.length - 1)
     }
     const onClosed = () => {
-      setNotice('방이 종료되었어요')
+      toast('방이 종료되었어요')
       setTimeout(() => router.push('/rooms'), 1200)
     }
 
@@ -187,7 +192,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
 
     s.emit('room:join', { roomId }, (res) => {
       if (!res.ok) {
-        setNotice(res.reason === 'full' ? '방이 가득 찼어요' : '이미 종료된 방이에요')
+        toast(res.reason === 'full' ? '방이 가득 찼어요' : '이미 종료된 방이에요', 'error')
         setTimeout(() => router.push('/rooms'), 1400)
         return
       }
@@ -210,12 +215,13 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
       s.off('room:closed', onClosed)
       s.emit('room:leave')
     }
-  }, [socket, live, roomId, router])
+  }, [socket, live, roomId, router, toast])
 
   const handleAdd = (track: SearchResult) => {
     if (live && socket) {
       socket.emit('queue:add', { videoId: track.videoId }, (res) => {
-        if (!res.ok) setNotice(res.reason ?? '곡을 추가하지 못했어요')
+        if (res.ok) toast('곡을 추가했어요', 'success')
+        else toast(res.reason ?? '곡을 추가하지 못했어요', 'error')
       })
     } else {
       setPlaylist((prev) => [
@@ -233,6 +239,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
           video_id: track.videoId,
         },
       ])
+      toast('곡을 추가했어요', 'success')
     }
   }
 
@@ -243,6 +250,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
 
   const handleEmoji = (emoji: string) => {
     bumpReactionsSent()
+    reactionCountRef.current += 1
     if (live && socket) {
       socket.emit('reaction:send', { emoji }) // rendered via broadcast
     } else {
@@ -255,13 +263,21 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
     router.push('/rooms')
   }
 
+  // End the room (host only). Capture a recap snapshot now — the backend archive is
+  // only saved after the close grace period — then go to the summary.
   const handleEnd = () => {
-    if (live) {
-      socket?.emit('room:leave') // room closes once empty
-      router.push('/rooms')
-    } else {
-      router.push(`/rooms/${roomId}/summary`)
-    }
+    const tracks = displayTracks
+    const durationSec = tracks.reduce((sum, t) => sum + (t.duration_sec ?? 0), 0)
+    saveSummary(roomId, {
+      title,
+      tags,
+      tracks: tracks.map((t) => ({ id: t.id, title: t.title, artist: t.artist, addedBy: t.added_by, videoId: t.video_id })),
+      participants: members.map((m) => ({ id: m.id, name: m.name, color: m.color })),
+      reactions: reactionCountRef.current,
+      durationMin: Math.max(1, Math.round(durationSec / 60)),
+    })
+    if (live) socket?.emit('room:leave') // room closes once empty
+    router.push(`/rooms/${roomId}/summary`)
   }
 
   return (
@@ -285,8 +301,39 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
           </button>
         )}
 
-        {notice && (
-          <p className="rounded-xl border-2 border-destructive/40 bg-white px-3 py-2 text-[12.5px] font-semibold text-destructive">{notice}</p>
+        {/* End-room confirmation */}
+        {confirmEnd && (
+          <div
+            className="fixed inset-0 z-50 mx-auto flex max-w-[440px] items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label="방 종료 확인"
+            onClick={() => setConfirmEnd(false)}
+          >
+            <div onClick={(e) => e.stopPropagation()} className="w-full rounded-[20px] border-2 border-border bg-white p-6 text-center">
+              <p className="text-[15px] font-extrabold text-foreground">방을 종료할까요?</p>
+              <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">종료하면 지금까지 재생한 곡 요약을 볼 수 있어요.</p>
+              <div className="mt-5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmEnd(false)}
+                  className="flex-1 rounded-full border-2 border-border py-2.5 text-[13px] font-bold text-muted-foreground hover:text-foreground"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmEnd(false)
+                    handleEnd()
+                  }}
+                  className="flex-1 rounded-full bg-destructive py-2.5 text-[13px] font-extrabold text-white"
+                >
+                  방 종료
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* tags + presence */}
@@ -360,7 +407,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
           {isHost && (
             <button
               type="button"
-              onClick={handleEnd}
+              onClick={() => setConfirmEnd(true)}
               className="flex-1 rounded-full border-2 border-destructive/40 py-2.5 text-center text-[13px] font-semibold text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
             >
               방 종료

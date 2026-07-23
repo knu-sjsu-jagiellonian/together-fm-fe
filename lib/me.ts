@@ -59,6 +59,21 @@ export function setMyUserId(id: string | null) {
   else localStorage.removeItem(ME_USER_ID_KEY)
 }
 
+/**
+ * Stable per-account key so localStorage data (saved playlists, activity counters)
+ * is isolated between accounts on the same browser. Uses the backend userId when
+ * logged in, else the nickname (mock), else a shared default.
+ */
+export function accountScope(): string {
+  if (typeof window === 'undefined') return 'default'
+  return localStorage.getItem(ME_USER_ID_KEY) ?? localStorage.getItem(ME_KEY) ?? 'default'
+}
+
+/** Namespace a base localStorage key to the current account. */
+export function scopedKey(base: string): string {
+  return `${base}.${accountScope()}`
+}
+
 /** Client hook that resolves the stored nickname after mount (SSR-safe). */
 export function useMe(): string {
   const [me, setState] = useState(DEFAULT_ME)
@@ -86,8 +101,11 @@ const LISTENED_KEY = 'tfm.songsListened'
 const REACTIONS_SEED = 128
 const LISTENED_SEED = 342
 
-function readCount(key: string, seed: number): number {
+// Counters are namespaced per account (scopedKey) so switching accounts shows that
+// account's own activity, not a browser-wide shared total.
+function readCount(base: string, seed: number): number {
   if (typeof window === 'undefined') return seed
+  const key = scopedKey(base)
   const raw = localStorage.getItem(key)
   if (raw === null) {
     localStorage.setItem(key, String(seed))
@@ -97,9 +115,9 @@ function readCount(key: string, seed: number): number {
   return Number.isFinite(n) ? n : seed
 }
 
-function bump(key: string, seed: number, by = 1) {
+function bump(base: string, seed: number, by = 1) {
   if (typeof window === 'undefined') return
-  localStorage.setItem(key, String(readCount(key, seed) + by))
+  localStorage.setItem(scopedKey(base), String(readCount(base, seed) + by))
 }
 
 export const bumpReactionsSent = () => bump(REACTIONS_KEY, REACTIONS_SEED)

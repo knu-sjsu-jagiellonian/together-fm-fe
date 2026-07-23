@@ -106,18 +106,3 @@ export const bumpReactionsSent = () => bump(REACTIONS_KEY, REACTIONS_SEED)
 export const bumpSongsListened = () => bump(LISTENED_KEY, LISTENED_SEED)
 export const getReactionsSent = () => readCount(REACTIONS_KEY, REACTIONS_SEED)
 export const getSongsListened = () => readCount(LISTENED_KEY, LISTENED_SEED)
-
-// A couple of saved playlists (mock — later from saved room recaps).
-export interface SavedPlaylist {
-  id: string
-  title: string
-  trackCount: number
-  savedAt: string
-  cover?: string
-}
-
-export const MOCK_SAVED_PLAYLISTS: SavedPlaylist[] = [
-  { id: 'pl1', title: '늦은 밤 인디 감성 🌙', trackCount: 10, savedAt: '2026.07.20', cover: 'https://i.ytimg.com/vi/djV11Xbc914/mqdefault.jpg' },
-  { id: 'pl2', title: 'Deep Focus — lofi beats', trackCount: 6, savedAt: '2026.07.18', cover: 'https://i.ytimg.com/vi/OPf0YbXqDm0/mqdefault.jpg' },
-  { id: 'pl3', title: 'Gym Energy 💪 hip-hop', trackCount: 8, savedAt: '2026.07.15', cover: 'https://i.ytimg.com/vi/RgKAFK5djSk/mqdefault.jpg' },
-]

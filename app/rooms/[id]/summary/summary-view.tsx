@@ -138,7 +138,10 @@ export function SummaryView({ roomId }: { roomId: string }) {
         {extra > 0 && <span className="text-[10.5px] font-bold text-muted-foreground">+{extra}</span>}
       </div>
 
-      <SummaryActions videoIds={data.tracks.map((t) => t.videoId).filter((v): v is string => Boolean(v))} />
+      <SummaryActions
+        title={data.title}
+        tracks={data.tracks.map((t) => ({ id: t.id, title: t.title, artist: t.artist, videoId: t.videoId }))}
+      />
     </main>
   )
 }

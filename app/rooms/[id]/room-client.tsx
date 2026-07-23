@@ -14,6 +14,7 @@ import { Minimi } from '@/components/minimi'
 import { useToast } from '@/components/toast'
 import { getToken } from '@/lib/api'
 import { saveSummary } from '@/lib/summary'
+import { savePlaylist, thumbnailFor, type SavedTrack } from '@/lib/playlists'
 import { useMe, useMyUserId, bumpReactionsSent, bumpSongsListened } from '@/lib/me'
 import { getSocket, type TfmSocket } from '@/lib/socket'
 import { useClockOffset } from '@/hooks/use-clock-offset'
@@ -84,6 +85,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
   )
   const [bursts, setBursts] = useState<Burst[]>([])
   const [confirmEnd, setConfirmEnd] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
   const burstId = useRef(0)
   const reactionCountRef = useRef(0)
   const toast = useToast()
@@ -258,9 +260,33 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
     }
   }
 
-  const handleLeave = () => {
+  // Save the current playlist to my profile (used when leaving or on the recap).
+  const savePlaylistToProfile = () => {
+    const tracks = displayTracks
+    if (tracks.length === 0) return
+    const savedTracks: SavedTrack[] = tracks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      artist: t.artist,
+      videoId: t.video_id,
+      thumbnail: t.album_art ?? thumbnailFor(t.video_id),
+    }))
+    savePlaylist({ title, tracks: savedTracks })
+  }
+
+  const doLeave = (save: boolean) => {
+    if (save) {
+      savePlaylistToProfile()
+      toast('플레이리스트를 저장했어요', 'success')
+    }
     socket?.emit('room:leave')
     router.push('/rooms')
+  }
+
+  // Leaving offers to save the playlist first (only when there are tracks to save).
+  const handleLeave = () => {
+    if (displayTracks.length > 0) setConfirmLeave(true)
+    else doLeave(false)
   }
 
   // End the room (host only). Capture a recap snapshot now — the backend archive is
@@ -330,6 +356,44 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
                   className="flex-1 rounded-full bg-destructive py-2.5 text-[13px] font-extrabold text-white"
                 >
                   방 종료
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Leave-room: offer to save the playlist first */}
+        {confirmLeave && (
+          <div
+            className="fixed inset-0 z-50 mx-auto flex max-w-[440px] items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label="방 나가기"
+            onClick={() => setConfirmLeave(false)}
+          >
+            <div onClick={(e) => e.stopPropagation()} className="w-full rounded-[20px] border-2 border-border bg-white p-6 text-center">
+              <p className="text-[15px] font-extrabold text-foreground">플레이리스트를 저장할까요?</p>
+              <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">나가기 전 지금까지의 곡 목록을 내 프로필에 저장할 수 있어요.</p>
+              <div className="mt-5 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmLeave(false)
+                    doLeave(true)
+                  }}
+                  className="w-full rounded-full bg-holo py-2.5 text-[13px] font-extrabold text-[#2c2a35]"
+                >
+                  저장하고 나가기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmLeave(false)
+                    doLeave(false)
+                  }}
+                  className="w-full rounded-full border-2 border-border py-2.5 text-[13px] font-bold text-muted-foreground hover:text-foreground"
+                >
+                  그냥 나가기
                 </button>
               </div>
             </div>

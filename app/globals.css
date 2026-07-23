@@ -135,8 +135,9 @@
 /* ── Phone shell: a fixed-height device frame that scrolls internally ──
    The frame itself is the scroll viewport, so content moves inside the
    "app" instead of scrolling the whole browser page. Sticky headers stick
-   to the top of this container; fixed overlays/nav anchor to the frame via
-   the containing block created on desktop below. */
+   to the top of this container. Fixed overlays/nav stay viewport-anchored
+   (centered over the frame via mx-auto max-w-[440px]) — note we must NOT put
+   a transform on the frame, or position:fixed children would scroll with it. */
 .phone-shell {
   width: 100%;
   max-width: 440px;
@@ -162,9 +163,6 @@
     margin-block: 24px;
     border-radius: 40px;
     border: 1px solid var(--border);
-    /* Establish a containing block so position:fixed children (+ button,
-       modals, toasts) anchor to the frame rather than the viewport. */
-    transform: translateZ(0);
   }
 }
 

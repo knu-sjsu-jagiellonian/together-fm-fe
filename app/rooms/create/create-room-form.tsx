@@ -59,11 +59,11 @@ export function CreateRoomForm() {
   const [error, setError] = useState<string | null>(null)
 
   const passwordOk = isPublic || (password.length >= 1 && password.length <= 8)
+  // At least one tag from any of the three groups is enough (not one from each).
+  const hasAnyTag = genres.length + moods.length + situations.length > 0
   const isValid =
     title.trim().length > 0 &&
-    genres.length > 0 &&
-    moods.length > 0 &&
-    situations.length > 0 &&
+    hasAnyTag &&
     track !== null &&
     passwordOk
 

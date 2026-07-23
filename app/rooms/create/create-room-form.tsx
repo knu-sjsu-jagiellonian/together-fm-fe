@@ -89,8 +89,10 @@ export function CreateRoomForm() {
         })
         router.push(`/rooms/${id}`)
       } else {
+        // Not logged in → no backend to create a real room. Send them back to the
+        // list (there are no mock rooms to land on anymore).
         await new Promise((res) => setTimeout(res, 500))
-        router.push('/rooms/room-1')
+        router.push('/rooms')
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '방 생성에 실패했어요')

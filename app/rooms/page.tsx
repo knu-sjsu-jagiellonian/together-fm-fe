@@ -9,9 +9,6 @@ export default async function RoomsPage() {
   const rooms = await getRooms()
   const initialRooms = rooms.map(fromMockRoom)
 
-  // Rough "listening now" tally for the presence pill.
-  const listeners = rooms.reduce((sum, r) => sum + r.participants.length, 0)
-
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <main className="flex-1 px-6 pb-24 pt-12">
@@ -19,12 +16,7 @@ export default async function RoomsPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-[23px] font-extrabold tracking-tight text-foreground">Together FM</h1>
-            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-transparent bg-white px-3 py-1 holo-ring">
-              <span className="h-2 w-2 rounded-full" style={{ background: '#b8a0e8' }} />
-              <span className="text-[11px] font-semibold text-muted-foreground">
-                지금 함께 듣는 사람 {listeners.toLocaleString()}명
-              </span>
-            </div>
+            <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">함께 만드는 실시간 라디오</p>
           </div>
 
           <Link

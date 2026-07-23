@@ -24,6 +24,8 @@ export function TrackSearch({ onAdd, placeholder = '노래 제목·아티스트 
   const { results, loading, error, searched, search, reset } = useTrackSearch()
   const [q, setQ] = useState('')
   const [open, setOpen] = useState(false)
+  // Keyboard-highlighted result (-1 = none); driven by ArrowUp/ArrowDown.
+  const [activeIndex, setActiveIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -36,9 +38,16 @@ export function TrackSearch({ onAdd, placeholder = '노래 제목·아티스트 
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Keep the highlighted option scrolled into view.
+  useEffect(() => {
+    if (activeIndex < 0) return
+    document.getElementById(`track-search-opt-${activeIndex}`)?.scrollIntoView({ block: 'nearest' })
+  }, [activeIndex])
+
   const runSearch = () => {
     if (!q.trim()) return
     setOpen(true)
+    setActiveIndex(-1) // a new search clears any prior keyboard highlight
     search(q)
   }
 
@@ -60,7 +69,17 @@ export function TrackSearch({ onAdd, placeholder = '노래 제목·아티스트 
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault()
-              runSearch()
+              if (open && activeIndex >= 0 && results[activeIndex]) handleAdd(results[activeIndex])
+              else runSearch()
+            } else if (e.key === 'ArrowDown' && results.length) {
+              e.preventDefault()
+              setOpen(true)
+              setActiveIndex((i) => Math.min(results.length - 1, i + 1))
+            } else if (e.key === 'ArrowUp' && results.length) {
+              e.preventDefault()
+              setActiveIndex((i) => Math.max(0, i - 1))
+            } else if (e.key === 'Escape') {
+              setOpen(false)
             }
           }}
           onFocus={() => searched && setOpen(true)}
@@ -69,6 +88,7 @@ export function TrackSearch({ onAdd, placeholder = '노래 제목·아티스트 
           aria-label="곡 검색"
           aria-expanded={open}
           aria-controls="track-search-listbox"
+          aria-activedescendant={open && activeIndex >= 0 ? `track-search-opt-${activeIndex}` : undefined}
           aria-autocomplete="list"
           role="combobox"
         />
@@ -100,12 +120,17 @@ export function TrackSearch({ onAdd, placeholder = '노래 제목·아티스트 
             <p className="px-4 py-4 text-center text-[13px] text-destructive">{error}</p>
           ) : results.length > 0 ? (
             <ul className="max-h-[22rem] divide-y divide-border overflow-y-auto">
-              {results.map((track) => (
+              {results.map((track, idx) => (
                 <li
                   key={track.videoId}
-                  className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-secondary/40"
+                  id={`track-search-opt-${idx}`}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-3 transition-colors hover:bg-secondary/40',
+                    idx === activeIndex && 'bg-secondary/40',
+                  )}
                   role="option"
-                  aria-selected={false}
+                  aria-selected={idx === activeIndex}
+                  onMouseEnter={() => setActiveIndex(idx)}
                 >
                   <Image
                     src={track.thumbnail}

@@ -36,6 +36,12 @@ export function ProfileClient() {
   const [listened, setListened] = useState<number | null>(null)
   const [playlists, setPlaylists] = useState<SavedPlaylist[] | null>(null)
   const [openPl, setOpenPl] = useState<SavedPlaylist | null>(null)
+  // Two-step delete confirm inside the playlist modal; reset each time it opens.
+  const [pendingDelete, setPendingDelete] = useState(false)
+  const openPlaylist = (pl: SavedPlaylist) => {
+    setPendingDelete(false)
+    setOpenPl(pl)
+  }
 
   useEffect(() => {
     // Deferred so we don't setState synchronously in the effect body (client-only read).
@@ -92,7 +98,7 @@ export function ProfileClient() {
               <li key={pl.id}>
                 <button
                   type="button"
-                  onClick={() => setOpenPl(pl)}
+                  onClick={() => openPlaylist(pl)}
                   className="flex w-full items-center gap-3 rounded-[16px] border-2 border-border bg-white p-3 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                 >
                   {pl.cover ? (
@@ -203,26 +209,48 @@ export function ProfileClient() {
 
             {/* actions */}
             <div className="flex gap-2 border-t border-border p-4">
-              <button
-                type="button"
-                onClick={() => handleDelete(openPl.id)}
-                className="inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-border px-4 py-2.5 text-[13px] font-bold text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" /> 삭제
-              </button>
-              {(() => {
-                const url = youtubePlaylistUrl(openPl.tracks.map((t) => t.videoId).filter((v): v is string => Boolean(v)))
-                return (
+              {pendingDelete ? (
+                <>
+                  <span className="flex flex-1 items-center text-[12.5px] font-bold text-foreground">정말 삭제할까요?</span>
                   <button
                     type="button"
-                    disabled={!url}
-                    onClick={() => url && window.open(url, '_blank', 'noopener,noreferrer')}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-full bg-holo py-2.5 text-[13px] font-extrabold text-[#2c2a35] disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={() => setPendingDelete(false)}
+                    className="rounded-full border-2 border-border px-4 py-2.5 text-[13px] font-bold text-muted-foreground hover:text-foreground"
                   >
-                    <ListMusic className="h-4 w-4" /> YouTube로 열기
+                    취소
                   </button>
-                )
-              })()}
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(openPl.id)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full bg-destructive px-4 py-2.5 text-[13px] font-extrabold text-white"
+                  >
+                    <Trash2 className="h-4 w-4" /> 삭제
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setPendingDelete(true)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-border px-4 py-2.5 text-[13px] font-bold text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" /> 삭제
+                  </button>
+                  {(() => {
+                    const url = youtubePlaylistUrl(openPl.tracks.map((t) => t.videoId).filter((v): v is string => Boolean(v)))
+                    return (
+                      <button
+                        type="button"
+                        disabled={!url}
+                        onClick={() => url && window.open(url, '_blank', 'noopener,noreferrer')}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-holo py-2.5 text-[13px] font-extrabold text-[#2c2a35] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <ListMusic className="h-4 w-4" /> YouTube로 열기
+                      </button>
+                    )
+                  })()}
+                </>
+              )}
             </div>
           </div>
         </div>

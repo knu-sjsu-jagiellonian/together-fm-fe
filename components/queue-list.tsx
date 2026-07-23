@@ -90,7 +90,9 @@ export function QueueList({ tracks, currentId, onRemove, canRemove, onAdd, onSel
                         e.stopPropagation()
                         onRemove(track.id)
                       }}
-                      className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none"
+                      // Touch devices have no hover, so the X must stay visible there;
+                      // only hover-capable pointers get the reveal-on-hover behaviour.
+                      className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-full text-muted-foreground transition-opacity hover:text-destructive focus-visible:opacity-100 focus-visible:outline-none [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
                       aria-label={`${track.title} 제거`}
                     >
                       <X className="h-3.5 w-3.5" />

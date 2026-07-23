@@ -138,7 +138,7 @@ export function ProfileClient() {
       {/* Playlist detail (songs) */}
       {openPl && (
         <div
-          className="fixed inset-0 z-50 mx-auto flex max-w-[440px] items-end justify-center bg-black/30 px-4 pb-4 backdrop-blur-sm"
+          className="frame-fixed z-50 flex items-end justify-center bg-black/30 px-4 pb-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-label={`${openPl.title} 상세`}

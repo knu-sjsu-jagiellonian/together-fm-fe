@@ -43,6 +43,7 @@ export function SummaryView({ roomId }: { roomId: string }) {
           ? {
               title: m.room.title,
               tags: m.room.tags,
+              host: m.room.host,
               tracks: m.tracks.map((t) => ({
                 id: t.id,
                 title: t.title,
@@ -139,7 +140,16 @@ export function SummaryView({ roomId }: { roomId: string }) {
       <div className="flex items-center gap-2">
         <ul className="flex flex-wrap gap-2" role="list">
           {visible.map((p) => (
-            <li key={p.id}>
+            <li key={p.id} className="relative">
+              {p.name === data.host && (
+                <span
+                  className="pointer-events-none absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 select-none text-[13px]"
+                  aria-label="방장"
+                  title="방장"
+                >
+                  👑
+                </span>
+              )}
               <Minimi seed={p.id} clothes={p.color} isMe={p.name === me} size={38} name={p.name} />
             </li>
           ))}

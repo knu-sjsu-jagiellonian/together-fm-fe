@@ -13,6 +13,8 @@ export interface SummaryTrack {
 export interface SummarySnapshot {
   title: string
   tags: string[]
+  /** Host nickname, so the recap can mark them with a crown. */
+  host?: string
   tracks: SummaryTrack[]
   participants: { id: string; name: string; color: string }[]
   reactions: number

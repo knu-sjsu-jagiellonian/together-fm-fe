@@ -14,7 +14,6 @@ import { Minimi } from '@/components/minimi'
 import { useToast } from '@/components/toast'
 import { getToken } from '@/lib/api'
 import { saveSummary } from '@/lib/summary'
-import { savePlaylist, thumbnailFor, type SavedTrack } from '@/lib/playlists'
 import { useMe, useMyUserId, bumpReactionsSent, bumpSongsListened } from '@/lib/me'
 import { getSocket, type TfmSocket } from '@/lib/socket'
 import { useClockOffset } from '@/hooks/use-clock-offset'
@@ -86,8 +85,9 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
   const [bursts, setBursts] = useState<Burst[]>([])
   const [confirmEnd, setConfirmEnd] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
-  // Shown to a non-host when the host closes the room: offer to save before leaving.
-  const [closedPrompt, setClosedPrompt] = useState(false)
+  // Shown to a non-host when the room closes (host ended it, or the playlist ran out):
+  // a short farewell notice, then they're taken to the same recap the host sees.
+  const [closedNotice, setClosedNotice] = useState(false)
   // Live only: tracks that already finished playing, kept so they stay in the list
   // as history (the server drops them from the queue once played).
   const [played, setPlayed] = useState<Track[]>([])
@@ -181,6 +181,28 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
     return () => clearTimeout(t)
   }, [initialRoom])
 
+  // Snapshot the current room state for the recap screen. The backend archive is
+  // only saved after the close grace period, so we capture what we see right now.
+  // Used by the host (on end) and by everyone else (when the room:closed arrives).
+  const captureSummary = () => {
+    const tracks = displayTracks
+    const durationSec = tracks.reduce((sum, t) => sum + (t.duration_sec ?? 0), 0)
+    saveSummary(roomId, {
+      title,
+      tags,
+      host: hostNickname,
+      tracks: tracks.map((t) => ({ id: t.id, title: t.title, artist: t.artist, addedBy: t.added_by, videoId: t.video_id })),
+      participants: members.map((m) => ({ id: m.id, name: m.name, color: m.color })),
+      reactions: reactionCountRef.current,
+      durationMin: Math.max(1, Math.round(durationSec / 60)),
+    })
+  }
+  // onClosed lives in a one-time effect closure, so route the latest capture through a ref.
+  const captureSummaryRef = useRef(captureSummary)
+  useEffect(() => {
+    captureSummaryRef.current = captureSummary
+  })
+
   // Join + subscribe (live only).
   useEffect(() => {
     if (!socket || !live) return
@@ -208,10 +230,12 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
       spawnBurst(emoji, idx >= 0 ? idx : membersRef.current.length - 1)
     }
     const onClosed = () => {
-      // The host who just ended is already navigating to the recap — don't prompt it.
+      // The host who just ended is already navigating to the recap — don't double-handle.
       if (endingRef.current) return
-      // Others get a prompt: the room ended, offer to save the playlist before leaving.
-      setClosedPrompt(true)
+      // Everyone else: capture the recap from what they see now, show a brief notice,
+      // then a small effect redirects them to the summary screen (like the host's).
+      captureSummaryRef.current()
+      setClosedNotice(true)
     }
 
     s.on('track:start', onTrack)
@@ -297,48 +321,17 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
     }
   }
 
-  // Save the current playlist to my profile (used when leaving or on the recap).
-  const savePlaylistToProfile = () => {
-    const tracks = displayTracks
-    if (tracks.length === 0) return
-    const savedTracks: SavedTrack[] = tracks.map((t) => ({
-      id: t.id,
-      title: t.title,
-      artist: t.artist,
-      videoId: t.video_id,
-      thumbnail: t.album_art ?? thumbnailFor(t.video_id),
-    }))
-    savePlaylist({ title, tracks: savedTracks })
-  }
-
-  const doLeave = (save: boolean) => {
-    if (save) {
-      savePlaylistToProfile()
-      toast('플레이리스트를 저장했어요', 'success')
-    }
-    socket?.emit('room:leave')
-    router.push('/rooms')
-  }
-
-  // Leaving offers to save the playlist first (only when there are tracks to save).
+  // Leaving takes you to your own recap of the session (the same summary screen
+  // the host gets on end). Saving the playlist is available there.
   const handleLeave = () => {
-    if (displayTracks.length > 0) setConfirmLeave(true)
-    else doLeave(false)
+    captureSummary()
+    socket?.emit('room:leave')
+    router.push(`/rooms/${roomId}/summary`)
   }
 
-  // End the room (host only). Capture a recap snapshot now — the backend archive is
-  // only saved after the close grace period — then go to the summary.
+  // End the room (host only). Capture the recap, then go to the summary.
   const handleEnd = () => {
-    const tracks = displayTracks
-    const durationSec = tracks.reduce((sum, t) => sum + (t.duration_sec ?? 0), 0)
-    saveSummary(roomId, {
-      title,
-      tags,
-      tracks: tracks.map((t) => ({ id: t.id, title: t.title, artist: t.artist, addedBy: t.added_by, videoId: t.video_id })),
-      participants: members.map((m) => ({ id: m.id, name: m.name, color: m.color })),
-      reactions: reactionCountRef.current,
-      durationMin: Math.max(1, Math.round(durationSec / 60)),
-    })
+    captureSummary()
     // Host leaving closes the room server-side and broadcasts room:closed to the
     // others; endingRef keeps our own broadcast from redirecting us off the recap.
     endingRef.current = true
@@ -363,6 +356,13 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
     return () => clearTimeout(t)
   }, [autoEnded])
 
+  // Non-host: after the room-closed notice shows, move on to the recap screen.
+  useEffect(() => {
+    if (!closedNotice) return
+    const t = setTimeout(() => router.push(`/rooms/${roomId}/summary`), 1800)
+    return () => clearTimeout(t)
+  }, [closedNotice, roomId, router])
+
   return (
     <>
       <AppHeader title={title} />
@@ -377,7 +377,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
               else localPlayer.play()
               setAudioUnlocked(true)
             }}
-            className="fixed inset-0 z-50 mx-auto flex max-w-[440px] flex-col items-center justify-center gap-4 bg-white/85 backdrop-blur-sm"
+            className="frame-fixed z-50 flex flex-col items-center justify-center gap-4 bg-white/85 backdrop-blur-sm"
           >
             <Vinyl size={96} hub="#b8a0e8" holoRing />
             <span className="rounded-full bg-holo px-6 py-3 text-[15px] font-extrabold text-[#2c2a35]">탭해서 참여하기</span>
@@ -388,7 +388,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
         {/* Auto-close: the live playlist ran out */}
         {autoEnded && (
           <div
-            className="fixed inset-0 z-50 mx-auto flex max-w-[440px] flex-col items-center justify-center gap-3 bg-white/90 px-6 text-center backdrop-blur-sm"
+            className="frame-fixed z-50 flex flex-col items-center justify-center gap-3 bg-white/90 px-6 text-center backdrop-blur-sm"
             role="dialog"
             aria-modal="true"
             aria-label="방 종료"
@@ -402,7 +402,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
         {/* End-room confirmation */}
         {confirmEnd && (
           <div
-            className="fixed inset-0 z-50 mx-auto flex max-w-[440px] items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
+            className="frame-fixed z-50 flex items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
             role="dialog"
             aria-modal="true"
             aria-label="방 종료 확인"
@@ -438,84 +438,54 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
           </div>
         )}
 
-        {/* Leave-room: offer to save the playlist first */}
+        {/* Leave-room confirmation */}
         {confirmLeave && (
           <div
-            className="fixed inset-0 z-50 mx-auto flex max-w-[440px] items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
+            className="frame-fixed z-50 flex items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
             role="dialog"
             aria-modal="true"
-            aria-label="방 나가기"
+            aria-label="방 나가기 확인"
             onClick={() => setConfirmLeave(false)}
           >
             <div onClick={(e) => e.stopPropagation()} className="w-full rounded-[20px] border-2 border-border bg-white p-6 text-center">
-              <p className="text-[15px] font-extrabold text-foreground">플레이리스트를 저장할까요?</p>
-              <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">나가기 전 지금까지의 곡 목록을 내 프로필에 저장할 수 있어요.</p>
-              <div className="mt-5 flex flex-col gap-2">
+              <p className="text-[15px] font-extrabold text-foreground">방을 나갈까요?</p>
+              <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">
+                나가면 지금까지 함께 들은 곡 요약을 볼 수 있어요.
+              </p>
+              <div className="mt-5 flex gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setConfirmLeave(false)
-                    doLeave(true)
-                  }}
-                  className="w-full rounded-full bg-holo py-2.5 text-[13px] font-extrabold text-[#2c2a35]"
+                  onClick={() => setConfirmLeave(false)}
+                  className="flex-1 rounded-full border-2 border-border py-2.5 text-[13px] font-bold text-muted-foreground hover:text-foreground"
                 >
-                  저장하고 나가기
+                  취소
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setConfirmLeave(false)
-                    doLeave(false)
+                    handleLeave()
                   }}
-                  className="w-full rounded-full border-2 border-border py-2.5 text-[13px] font-bold text-muted-foreground hover:text-foreground"
+                  className="flex-1 rounded-full bg-holo py-2.5 text-[13px] font-extrabold text-[#2c2a35]"
                 >
-                  그냥 나가기
+                  나가기
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Room closed by the host: offer to save the playlist before leaving */}
-        {closedPrompt && (
+        {/* Room closed (host ended it): brief notice, then off to the recap screen. */}
+        {closedNotice && (
           <div
-            className="fixed inset-0 z-50 mx-auto flex max-w-[440px] items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
+            className="frame-fixed z-50 flex flex-col items-center justify-center gap-3 bg-white/90 px-6 text-center backdrop-blur-sm"
             role="dialog"
             aria-modal="true"
             aria-label="방 종료"
           >
-            <div className="w-full rounded-[20px] border-2 border-border bg-white p-6 text-center">
-              <p className="text-[15px] font-extrabold text-foreground">방이 종료되었어요</p>
-              <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">
-                방장이 방을 종료했어요.{displayTracks.length > 0 ? ' 지금까지의 곡 목록을 저장할까요?' : ''}
-              </p>
-              <div className="mt-5 flex flex-col gap-2">
-                {displayTracks.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setClosedPrompt(false)
-                      savePlaylistToProfile()
-                      toast('플레이리스트를 저장했어요', 'success')
-                      router.push('/rooms')
-                    }}
-                    className="w-full rounded-full bg-holo py-2.5 text-[13px] font-extrabold text-[#2c2a35]"
-                  >
-                    저장하고 나가기
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setClosedPrompt(false)
-                    router.push('/rooms')
-                  }}
-                  className="w-full rounded-full border-2 border-border py-2.5 text-[13px] font-bold text-muted-foreground hover:text-foreground"
-                >
-                  {displayTracks.length > 0 ? '그냥 나가기' : '나가기'}
-                </button>
-              </div>
-            </div>
+            <Vinyl size={72} hub="#b8a0e8" holoRing />
+            <p className="text-[15px] font-extrabold text-foreground">방이 종료되었어요</p>
+            <p className="text-[12px] font-medium text-muted-foreground">방장이 방을 종료했어요.<br />잠시 후 요약 화면으로 이동해요.</p>
           </div>
         )}
 
@@ -607,7 +577,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
           ) : (
             <button
               type="button"
-              onClick={handleLeave}
+              onClick={() => setConfirmLeave(true)}
               className="w-full rounded-full border-2 border-border py-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
             >
               방 나가기

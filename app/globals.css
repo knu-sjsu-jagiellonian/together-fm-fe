@@ -166,6 +166,30 @@
   }
 }
 
+/* A fixed layer that exactly overlaps the centered phone frame. Use it for
+   full-screen overlays (dialogs) and bottom-anchored controls (the + FAB) so
+   they stay INSIDE the frame instead of being pinned to the raw viewport —
+   otherwise they overflow or get clipped by the frame's rounded bottom on
+   wider screens. Position absolute children within it (it is a containing
+   block for them). Keeps the same box geometry as .phone-shell above. */
+.frame-fixed {
+  position: fixed;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 440px;
+  height: 100dvh;
+}
+@media (min-width: 480px) {
+  .frame-fixed {
+    top: 24px;
+    height: min(900px, calc(100dvh - 48px));
+    border-radius: 40px;
+    overflow: hidden;
+  }
+}
+
 /* ── Holographic surfaces ── */
 .bg-holo {
   background-image: var(--holo);

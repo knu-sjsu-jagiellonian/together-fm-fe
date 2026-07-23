@@ -174,7 +174,7 @@ export function RoomsClient({ initialRooms }: RoomsClientProps) {
       {/* Filter bottom sheet */}
       {sheetOpen && (
         <div
-          className="fixed inset-0 z-50 mx-auto flex max-w-[440px] items-end justify-center bg-black/30 px-4 pb-4 backdrop-blur-sm"
+          className="frame-fixed z-50 flex items-end justify-center bg-black/30 px-4 pb-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-label="필터"
@@ -230,7 +230,7 @@ export function RoomsClient({ initialRooms }: RoomsClientProps) {
       {/* Private-room password modal */}
       {locked && (
         <div
-          className="fixed inset-0 z-50 mx-auto flex max-w-[440px] items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
+          className="frame-fixed z-50 flex items-center justify-center bg-black/25 px-6 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-label="비공개 방 입장"

@@ -132,24 +132,39 @@
   }
 }
 
-/* ── Phone shell: center the mobile-first app like a device on desktop ── */
+/* ── Phone shell: a fixed-height device frame that scrolls internally ──
+   The frame itself is the scroll viewport, so content moves inside the
+   "app" instead of scrolling the whole browser page. Sticky headers stick
+   to the top of this container; fixed overlays/nav anchor to the frame via
+   the containing block created on desktop below. */
 .phone-shell {
   width: 100%;
   max-width: 440px;
   margin-inline: auto;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   position: relative;
   background: linear-gradient(160deg, #fdf9ff 0%, #f5f2fb 100%);
   box-shadow: 0 24px 70px rgba(80, 60, 120, 0.18);
 }
+/* Slim scrollbar so the internal scroll reads as an app, not a web page. */
+.phone-shell::-webkit-scrollbar {
+  width: 0;
+}
 @media (min-width: 480px) {
   .phone-shell {
-    min-height: auto;
+    /* Cap the height and center vertically like a phone on a desk. */
+    height: min(900px, calc(100dvh - 48px));
     margin-block: 24px;
     border-radius: 40px;
     border: 1px solid var(--border);
-    /* no overflow clipping here — it would break sticky headers/nav */
+    /* Establish a containing block so position:fixed children (+ button,
+       modals, toasts) anchor to the frame rather than the viewport. */
+    transform: translateZ(0);
   }
 }
 

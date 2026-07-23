@@ -88,6 +88,9 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
   const [confirmLeave, setConfirmLeave] = useState(false)
   const burstId = useRef(0)
   const reactionCountRef = useRef(0)
+  // Set when *this* client (the host) ends the room, so its own room:closed
+  // broadcast doesn't bounce it off the recap screen to the room list.
+  const endingRef = useRef(false)
   const toast = useToast()
 
   const [live, setLive] = useState(false)
@@ -182,6 +185,8 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
       spawnBurst(emoji, idx >= 0 ? idx : membersRef.current.length - 1)
     }
     const onClosed = () => {
+      // The host who just ended is already navigating to the recap — don't redirect it.
+      if (endingRef.current) return
       toast('방이 종료되었어요')
       setTimeout(() => router.push('/rooms'), 1200)
     }
@@ -246,8 +251,14 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
   }
 
   const handleRemove = (trackId: string) => {
-    if (live) setQueue((prev) => prev.filter((t) => t.id !== trackId))
-    else setPlaylist((prev) => prev.filter((t) => t.id !== trackId))
+    if (live) {
+      // Server removes it and broadcasts queue:update; we just surface failures.
+      socket?.emit('queue:remove', { trackId }, (res) => {
+        if (!res.ok) toast(res.reason ?? '곡을 삭제하지 못했어요', 'error')
+      })
+    } else {
+      setPlaylist((prev) => prev.filter((t) => t.id !== trackId))
+    }
   }
 
   const handleEmoji = (emoji: string) => {
@@ -302,7 +313,10 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
       reactions: reactionCountRef.current,
       durationMin: Math.max(1, Math.round(durationSec / 60)),
     })
-    if (live) socket?.emit('room:leave') // room closes once empty
+    // Host leaving closes the room server-side and broadcasts room:closed to the
+    // others; endingRef keeps our own broadcast from redirecting us off the recap.
+    endingRef.current = true
+    if (live) socket?.emit('room:leave')
     router.push(`/rooms/${roomId}/summary`)
   }
 
@@ -459,28 +473,30 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
           onSelect={live ? undefined : localPlayer.playAt}
         />
 
-        {/* leave / end (end is host-only) */}
-        <div className="flex gap-3 pt-1">
-          <button
-            type="button"
-            onClick={handleLeave}
-            className="flex-1 rounded-full border-2 border-border py-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-          >
-            방 나가기
-          </button>
-          {isHost && (
+        {/* Leave / end. The host leaving closes the room for everyone, so the host
+            gets a single '방 종료' action instead of a separate '방 나가기'. */}
+        <div className="pt-1">
+          {isHost ? (
             <button
               type="button"
               onClick={() => setConfirmEnd(true)}
-              className="flex-1 rounded-full border-2 border-destructive/40 py-2.5 text-center text-[13px] font-semibold text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+              className="w-full rounded-full border-2 border-destructive/40 py-2.5 text-center text-[13px] font-semibold text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
             >
               방 종료
             </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleLeave}
+              className="w-full rounded-full border-2 border-border py-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            >
+              방 나가기
+            </button>
           )}
         </div>
-        {!isHost && hostNickname && (
-          <p className="text-center text-[10.5px] font-medium text-muted-foreground/70">방 종료는 방장만 할 수 있어요</p>
-        )}
+        <p className="text-center text-[10.5px] font-medium text-muted-foreground/70">
+          {isHost ? '방장이 나가면 방이 종료돼요' : '방장이 방을 종료하면 함께 종료돼요'}
+        </p>
       </div>
     </>
   )

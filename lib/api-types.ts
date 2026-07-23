@@ -200,8 +200,11 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   'time:ping': (payload: { t0: number }) => void;
   'room:join': (payload: { roomId: string }, ack: (result: JoinResult) => void) => void;
+  /** Leave the room. If the host sends it, the room closes immediately (server-side). */
   'room:leave': () => void;
   'queue:add': (payload: TrackInput, ack: (result: AckResult) => void) => void;
+  /** Remove a queued track. Allowed for the host or the track's adder; playing track is not removable. */
+  'queue:remove': (payload: { trackId: string }, ack: (result: AckResult) => void) => void;
   'reaction:send': (payload: { emoji: string }) => void;
 }
 

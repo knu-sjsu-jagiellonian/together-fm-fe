@@ -95,35 +95,37 @@ export function NowPlayingCard({
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="mt-2 flex items-center justify-center gap-6">
-        <button
-          type="button"
-          onClick={onPrev}
-          disabled={!hasPrev}
-          className="text-foreground transition-transform hover:scale-110 disabled:opacity-30 focus-visible:outline-none"
-          aria-label="이전 곡"
-        >
-          <SkipBack className="h-5 w-5" fill="currentColor" />
-        </button>
-        <button
-          type="button"
-          onClick={onToggle}
-          className="grid h-10 w-10 place-items-center rounded-full bg-primary text-white transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-          aria-label={isPlaying ? '일시정지' : '재생'}
-        >
-          {isPlaying ? <Pause className="h-4 w-4" fill="currentColor" /> : <Play className="h-4 w-4" fill="currentColor" />}
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={!hasNext}
-          className="text-foreground transition-transform hover:scale-110 disabled:opacity-30 focus-visible:outline-none"
-          aria-label="다음 곡"
-        >
-          <SkipForward className="h-5 w-5" fill="currentColor" />
-        </button>
-      </div>
+      {/* Controls — hidden in radio mode (no handlers): playback is automatic. */}
+      {onToggle && (
+        <div className="mt-2 flex items-center justify-center gap-6">
+          <button
+            type="button"
+            onClick={onPrev}
+            disabled={!hasPrev}
+            className="text-foreground transition-transform hover:scale-110 disabled:opacity-30 focus-visible:outline-none"
+            aria-label="이전 곡"
+          >
+            <SkipBack className="h-5 w-5" fill="currentColor" />
+          </button>
+          <button
+            type="button"
+            onClick={onToggle}
+            className="grid h-10 w-10 place-items-center rounded-full bg-primary text-white transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            aria-label={isPlaying ? '일시정지' : '재생'}
+          >
+            {isPlaying ? <Pause className="h-4 w-4" fill="currentColor" /> : <Play className="h-4 w-4" fill="currentColor" />}
+          </button>
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={!hasNext}
+            className="text-foreground transition-transform hover:scale-110 disabled:opacity-30 focus-visible:outline-none"
+            aria-label="다음 곡"
+          >
+            <SkipForward className="h-5 w-5" fill="currentColor" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

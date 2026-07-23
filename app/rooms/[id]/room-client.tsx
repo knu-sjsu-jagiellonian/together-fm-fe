@@ -88,8 +88,15 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
   const [confirmLeave, setConfirmLeave] = useState(false)
   // Shown to a non-host when the host closes the room: offer to save before leaving.
   const [closedPrompt, setClosedPrompt] = useState(false)
+  // Live only: tracks that already finished playing, kept so they stay in the list
+  // as history (the server drops them from the queue once played).
+  const [played, setPlayed] = useState<Track[]>([])
+  // Live only: shown when the playlist runs out and the room auto-closes.
+  const [autoEnded, setAutoEnded] = useState(false)
   const burstId = useRef(0)
   const reactionCountRef = useRef(0)
+  const currentRef = useRef<Track | null>(current)
+  const hasPlayedRef = useRef(false)
   // Set when *this* client (the host) ends the room, so its own room:closed
   // broadcast doesn't bounce it off the recap screen to the room list.
   const endingRef = useRef(false)
@@ -109,7 +116,8 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
   const localPlayer = useLocalPlayer(playlist, !live)
 
   const displayCurrent = live ? current : localPlayer.current
-  const displayTracks = live ? (current ? [current, ...queue] : queue) : playlist
+  // Live list = history (played) + now playing + upcoming; mock uses the static playlist.
+  const displayTracks = live ? [...played, ...(current ? [current] : []), ...queue] : playlist
 
   const membersRef = useRef(members)
   useEffect(() => {
@@ -134,7 +142,12 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
   // Host: live → my member's nickname matches the room's hostNickname (resolved via my
   // userId); mock → the room's host nickname. added-by check stays by nickname.
   const isHost = live ? foundMe >= 0 && members[foundMe]?.name === hostNickname : room?.host === me
-  const canRemove = (t: Track) => isHost || t.added_by === me
+  const canRemove = (t: Track) => {
+    if (!(isHost || t.added_by === me)) return false
+    // Live: only upcoming (queued) tracks are removable — not the playing or past ones.
+    if (live) return queue.some((q) => q.id === t.id)
+    return true
+  }
 
   const positions = circlePositions(Math.max(members.length, 1))
 
@@ -175,7 +188,15 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
     const toDisplay = (t: ApiTrack) => toDisplayTrack(t, roomId)
 
     const onTrack = (cur: NowPlaying | null) => {
-      setCurrent(cur ? toDisplay(cur.track) : null)
+      const next = cur ? toDisplay(cur.track) : null
+      const prev = currentRef.current
+      // When the song changes, keep the finished one as history (server drops it).
+      if (prev && prev.id !== next?.id) {
+        setPlayed((p) => (p.some((t) => t.id === prev.id) ? p : [...p, prev]))
+      }
+      if (next) hasPlayedRef.current = true
+      currentRef.current = next
+      setCurrent(next)
       syncToRef.current(cur)
     }
     const onQueue = (q: ApiTrack[]) => setQueue(q.map(toDisplay))
@@ -211,7 +232,10 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
       setQueue(snap.queue.map(toDisplay))
       setMembers(snap.members.map((m) => ({ id: m.id, userId: m.userId, name: m.nickname, color: colorFor(m.nickname) })))
       if (snap.current) {
-        setCurrent(toDisplay(snap.current.track))
+        const cur = toDisplay(snap.current.track)
+        currentRef.current = cur
+        hasPlayedRef.current = true
+        setCurrent(cur)
         syncToRef.current(snap.current)
       }
     })
@@ -322,25 +346,57 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
     router.push(`/rooms/${roomId}/summary`)
   }
 
+  // Auto-close a live room when the playlist runs out (host only). Once a song has
+  // played and both current and queue are empty, the radio has nothing left.
+  const handleEndRef = useRef(handleEnd)
+  useEffect(() => {
+    handleEndRef.current = handleEnd
+  })
+  useEffect(() => {
+    if (!live || !isHost || autoEnded) return
+    if (!hasPlayedRef.current || current !== null || queue.length > 0) return
+    setAutoEnded(true)
+  }, [live, isHost, autoEnded, current, queue.length])
+  useEffect(() => {
+    if (!autoEnded) return
+    const t = setTimeout(() => handleEndRef.current(), 1800)
+    return () => clearTimeout(t)
+  }, [autoEnded])
+
   return (
     <>
       <AppHeader title={title} />
 
       <div className="flex flex-1 flex-col gap-5 px-6 pb-8 pt-4">
-        {/* Audio-unlock overlay (autoplay policy) */}
-        {live && current && !audioUnlocked && (
+        {/* Audio-unlock overlay (autoplay policy) — tapping starts the radio. */}
+        {displayCurrent && !audioUnlocked && (
           <button
             type="button"
             onClick={() => {
-              player.unlock()
+              if (live) player.unlock()
+              else localPlayer.play()
               setAudioUnlocked(true)
             }}
             className="fixed inset-0 z-50 mx-auto flex max-w-[440px] flex-col items-center justify-center gap-4 bg-white/85 backdrop-blur-sm"
           >
             <Vinyl size={96} hub="#b8a0e8" holoRing />
             <span className="rounded-full bg-holo px-6 py-3 text-[15px] font-extrabold text-[#2c2a35]">탭해서 참여하기</span>
-            <span className="text-[12px] font-medium text-muted-foreground">모두와 같은 지점부터 함께 들어요</span>
+            <span className="text-[12px] font-medium text-muted-foreground">{live ? '모두와 같은 지점부터 함께 들어요' : '탭하면 라디오가 시작돼요'}</span>
           </button>
+        )}
+
+        {/* Auto-close: the live playlist ran out */}
+        {autoEnded && (
+          <div
+            className="fixed inset-0 z-50 mx-auto flex max-w-[440px] flex-col items-center justify-center gap-3 bg-white/90 px-6 text-center backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label="방 종료"
+          >
+            <Vinyl size={72} hub="#b8a0e8" holoRing />
+            <p className="text-[15px] font-extrabold text-foreground">플레이리스트가 끝났어요</p>
+            <p className="text-[12px] font-medium text-muted-foreground">마지막 곡이 끝나 방이 종료돼요.<br />잠시 후 요약 화면으로 이동해요.</p>
+          </div>
         )}
 
         {/* End-room confirmation */}
@@ -509,19 +565,20 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
           })}
         </section>
 
-        {/* now playing */}
+        {/* now playing — radio style, no manual controls (playback is automatic) */}
         <NowPlayingCard
           track={displayCurrent}
           isPlaying={live ? player.isPlaying : localPlayer.isPlaying}
           progressSec={live ? player.progress : localPlayer.progress}
           durationSec={live ? player.duration || displayCurrent?.duration_sec : localPlayer.duration}
-          onToggle={live ? player.toggle : localPlayer.toggle}
-          // In live mode the server decides track order, so no manual next/prev.
-          onNext={live ? undefined : localPlayer.next}
-          onPrev={live ? undefined : localPlayer.prev}
-          hasNext={live ? false : localPlayer.hasNext}
-          hasPrev={live ? false : localPlayer.hasPrev}
         />
+
+        {/* Last-song notice (live): the room closes when this song ends. */}
+        {live && current && queue.length === 0 && (
+          <p className="-mt-3 text-center text-[11px] font-semibold text-muted-foreground">
+            🔔 마지막 곡이에요 · 끝나면 방이 종료돼요
+          </p>
+        )}
 
         <ReactionBar onEmoji={handleEmoji} />
 

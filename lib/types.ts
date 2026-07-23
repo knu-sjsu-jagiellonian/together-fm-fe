@@ -15,8 +15,6 @@ export type GenreTag =
 /** Any single tag (genre / mood / situation). Matches the backend TagId union. */
 export type Tag = GenreTag | MoodTag | SituationTag
 
-export type FilterTag = '전체' | Tag
-
 export interface Room {
   id: string
   title: string
@@ -86,7 +84,6 @@ export const SITUATION_TAGS: SituationTag[] = [
   '공부', '운동', '여행', '일상',
   '드라이브', '카페', '취침', '출근',
 ]
-export const FILTER_TAGS: FilterTag[] = ['전체', ...GENRE_TAGS, ...MOOD_TAGS, ...SITUATION_TAGS]
 
 /**
  * Per-tag color classes (single source of truth for TagPill).

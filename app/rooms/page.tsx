@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { User } from 'lucide-react'
 import { getRooms } from '@/lib/mock-data'
-import { FILTER_TAGS } from '@/lib/types'
 import { fromMockRoom } from '@/lib/rooms'
 import { RoomsClient } from './rooms-client'
 import { BottomNav } from '@/components/bottom-nav'
@@ -38,7 +37,7 @@ export default async function RoomsPage() {
         </div>
 
         {/* Search + filters + room list */}
-        <RoomsClient initialRooms={initialRooms} filterTags={FILTER_TAGS} />
+        <RoomsClient initialRooms={initialRooms} />
       </main>
 
       <BottomNav />

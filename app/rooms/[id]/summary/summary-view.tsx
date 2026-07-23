@@ -150,7 +150,7 @@ export function SummaryView({ roomId }: { roomId: string }) {
                   👑
                 </span>
               )}
-              <Minimi seed={p.id} clothes={p.color} isMe={p.name === me} size={38} name={p.name} />
+              <Minimi seed={p.name} isMe={p.name === me} size={38} name={p.name} />
             </li>
           ))}
         </ul>

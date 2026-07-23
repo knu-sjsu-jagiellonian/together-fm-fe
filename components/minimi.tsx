@@ -1,16 +1,17 @@
 import { cn } from '@/lib/utils'
 
-// Pixel-doll template (6 cols × 12 rows), mirroring the mock's minimi shape.
-// H=hair  S=skin  E=eye  B=blush  C=clothes  L=legs  F=shoes  .=empty
+// Pixel-doll template (6 cols × 12 rows). Two spaced eyes + a little smile and
+// blush cheeks read as a cute chibi.
+// H=hair  S=skin  E=eye  B=blush  M=mouth  C=clothes  L=legs  F=shoes  .=empty
 const GRID = [
   '.HHHH.',
   'HHHHHH',
   'HSSSSH',
-  'HSEESH',
+  'HESSEH',
   '.BSSB.',
-  '..SS..',
-  '..SS..',
+  '..MM..',
   '.CCCC.',
+  'CCCCCC',
   '.CCCC.',
   '.CCCC.',
   '.LLLL.',
@@ -19,13 +20,15 @@ const GRID = [
 
 const SKIN = '#ffdcb8'
 const EYE = '#4a3728'
-const BLUSH = '#ffb3a0'
+const BLUSH = '#ff9a8a'
+const MOUTH = '#e6857b'
 const LEGS = '#4a3728'
 const SHOES = '#2f2418'
 
-// Deterministic hair/clothes variants (mock uses coral/brown hair + pastel clothes).
-const HAIR = ['#ff7a63', '#5c4433']
-const CLOTHES = ['#e0c2ff', '#a0c8e8', '#e8a8c0']
+// Deterministic hair/clothes variants seeded by nickname, so a person looks the
+// same everywhere. More options = more variety and fewer collisions.
+const HAIR = ['#ff7a63', '#5c4433', '#3a3a44', '#e8b26a', '#e08fb0']
+const CLOTHES = ['#e0c2ff', '#a0c8e8', '#e8a8c0', '#bfe6c9', '#ffd6a5', '#c6c2f2']
 
 function pick<T>(arr: T[], seed: string, salt: number) {
   let sum = salt
@@ -52,7 +55,7 @@ export function Minimi({ seed = 'x', clothes, size = 38, isMe = false, name, cla
   const hair = pick(HAIR, seed, 1)
   const cloth = clothes ?? pick(CLOTHES, seed, 7)
   const colorFor: Record<string, string> = {
-    H: hair, S: SKIN, E: EYE, B: BLUSH, C: cloth, L: LEGS, F: SHOES,
+    H: hair, S: SKIN, E: EYE, B: BLUSH, M: MOUTH, C: cloth, L: LEGS, F: SHOES,
   }
 
   return (

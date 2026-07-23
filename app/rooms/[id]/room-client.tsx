@@ -522,7 +522,7 @@ export function RoomClient({ roomId, initialRoom }: RoomClientProps) {
                     👑
                   </span>
                 )}
-                <Minimi seed={m.id} clothes={m.color} isMe={i === meIndex} size={30} name={m.name} />
+                <Minimi seed={m.name} isMe={i === meIndex} size={30} name={m.name} />
                 {bursts
                   .filter((b) => b.idx === i)
                   .map((b) => (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Radio, ChevronRight } from 'lucide-react'
+import { Radio } from 'lucide-react'
 import { Minimi } from '@/components/minimi'
 import { api, setToken, ApiError } from '@/lib/api'
 import { disconnectSocket } from '@/lib/socket'
@@ -76,25 +76,22 @@ export function LoginClient() {
 
       {/* Real backend accounts */}
       {users && (
-        <ul className="flex flex-col gap-2.5" role="list">
+        <ul className="grid grid-cols-2 gap-2.5" role="list">
           {users.map((u) => (
             <li key={u.id}>
               <button
                 type="button"
                 disabled={busy !== null}
                 onClick={() => loginReal(u)}
-                className="flex w-full items-center gap-3 rounded-[16px] border-2 border-border bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_8px_20px_rgba(120,100,160,0.12)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                className="flex w-full flex-col items-center gap-2 rounded-[16px] border-2 border-border bg-white px-2 py-3.5 text-center transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_8px_20px_rgba(120,100,160,0.12)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
               >
-                <Minimi seed={u.nickname} size={38} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-extrabold text-foreground">{u.nickname}</p>
-                  <p className="truncate text-[11.5px] font-medium text-muted-foreground">@{u.username}</p>
+                <Minimi seed={u.nickname} size={44} />
+                <div className="w-full min-w-0">
+                  <p className="truncate text-[14px] font-extrabold text-foreground">{u.nickname}</p>
+                  <p className="truncate text-[11px] font-medium text-muted-foreground">
+                    {busy === u.username ? '입장중…' : `@${u.username}`}
+                  </p>
                 </div>
-                {busy === u.username ? (
-                  <span className="text-[11px] font-semibold text-muted-foreground">입장중…</span>
-                ) : (
-                  <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                )}
               </button>
             </li>
           ))}
@@ -107,20 +104,19 @@ export function LoginClient() {
           <p className="mb-3 rounded-xl border-2 border-border bg-white px-3 py-2 text-center text-[11.5px] font-medium text-muted-foreground">
             백엔드에 연결할 수 없어 mock 계정으로 진행해요 (닉네임만)
           </p>
-          <ul className="flex flex-col gap-2.5" role="list">
+          <ul className="grid grid-cols-2 gap-2.5" role="list">
             {MOCK_ACCOUNTS.map((acc) => (
               <li key={acc.nickname}>
                 <button
                   type="button"
                   onClick={() => loginMock(acc.nickname)}
-                  className="flex w-full items-center gap-3 rounded-[16px] border-2 border-border bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                  className="flex w-full flex-col items-center gap-2 rounded-[16px] border-2 border-border bg-white px-2 py-3.5 text-center transition-all hover:-translate-y-0.5 hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                 >
-                  <Minimi seed={acc.nickname} size={38} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-extrabold text-foreground">{acc.nickname}</p>
-                    {acc.note && <p className="truncate text-[11.5px] font-medium text-muted-foreground">{acc.note}</p>}
+                  <Minimi seed={acc.nickname} size={44} />
+                  <div className="w-full min-w-0">
+                    <p className="truncate text-[14px] font-extrabold text-foreground">{acc.nickname}</p>
+                    {acc.note && <p className="truncate text-[11px] font-medium text-muted-foreground">{acc.note}</p>}
                   </div>
-                  <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                 </button>
               </li>
             ))}

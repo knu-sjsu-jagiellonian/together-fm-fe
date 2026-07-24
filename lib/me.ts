@@ -16,14 +16,24 @@ export interface MockAccount {
   note?: string
 }
 
-// Offline fallback accounts — the backend seed nicknames, matching the mock rooms
-// so host/adder demos work (예원 hosts room-1, 민준 hosts room-2).
+// Offline fallback accounts — the same nicknames the backend seeds (db.ts SEED_USERS),
+// so a demo still works in the same order when the backend is unreachable.
 export const MOCK_ACCOUNTS: MockAccount[] = [
-  { nickname: '예원', note: '인디 감성 방 방장' },
-  { nickname: '민준', note: 'Pop Party 방 방장' },
-  { nickname: '서연' },
-  { nickname: '지호' },
-  { nickname: '하은' },
+  { nickname: '예원' },
+  { nickname: '현지' },
+  { nickname: '은샘' },
+  { nickname: '주은' },
+  { nickname: '윤정' },
+  { nickname: '상민' },
+  { nickname: '창목' },
+  { nickname: '준형' },
+  { nickname: '재윤' },
+  { nickname: '은하' },
+  { nickname: '하연' },
+  { nickname: '수빈' },
+  { nickname: '건호' },
+  { nickname: '승규' },
+  { nickname: '교수님' },
 ]
 
 export function getMe(): string {
